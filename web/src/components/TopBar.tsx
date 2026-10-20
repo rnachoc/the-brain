@@ -15,6 +15,8 @@ export function TopBar() {
   const totalAgents = useStore((s) => s.projects.reduce((n, p) => n + p.agents, 0))
   const running = useStore((s) => s.projects.filter((p) => agentStatus(s, p.id) !== 'idle').reduce((n, p) => n + p.agents, 0))
   const approvals = useStore((s) => s.orders.filter((o) => o.status === 'awaiting_approval').length)
+  const connected = useStore((s) => s.connected)
+  const live = useStore((s) => s.live)
 
   return (
     <header className="relative z-20 flex h-14 shrink-0 items-center gap-6 border-b border-white/5 bg-hq-bg/70 px-5 backdrop-blur">
@@ -44,6 +46,21 @@ export function TopBar() {
       </nav>
 
       <div className="ml-auto flex items-center gap-4 whitespace-nowrap text-sm">
+        {!connected ? (
+          <span className="rounded-full bg-rose-500/10 px-2.5 py-1 text-xs font-medium text-rose-300 ring-1 ring-rose-400/30">
+            Sin conexión con el servidor
+          </span>
+        ) : (
+          <span
+            title={live ? 'Router con Claude y agentes reales en los proyectos live' : 'Añade ANTHROPIC_API_KEY en .env para usar Claude'}
+            className={cx(
+              'rounded-full px-2.5 py-1 text-xs font-medium ring-1',
+              live ? 'bg-violet-500/10 text-violet-200 ring-violet-400/30' : 'bg-white/5 text-slate-400 ring-white/10',
+            )}
+          >
+            {live ? 'Claude conectado' : 'Modo simulado'}
+          </span>
+        )}
         {approvals > 0 && (
           <span className="flex items-center gap-1.5 rounded-full bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300 ring-1 ring-amber-400/30">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />

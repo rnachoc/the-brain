@@ -124,6 +124,7 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
                           <span className={cx('min-w-0 flex-1 truncate text-sm', o.status === 'done' ? 'text-slate-400' : 'text-slate-200')}>{o.title}</span>
                           <StatusChip status={o.status} />
                         </div>
+                        {o.note && <div className="pl-5 text-[11px] text-slate-500">{o.note}</div>}
                         {o.draft && <DraftCard order={o} />}
                       </li>
                     ))}
@@ -137,7 +138,7 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
           <div ref={logRef} className="h-full overflow-y-auto bg-black/30 p-3 font-mono text-[11.5px] leading-relaxed">
             {logs.length === 0 && <Empty text="Sin actividad." />}
             {logs.map((l) => (
-              <div key={l.id} className="flex gap-2">
+              <div key={l.id} className="flex gap-2" title={l.detail}>
                 <span className="shrink-0 text-slate-600">{fmtTime(l.ts)}</span>
                 <span className={cx(LOG_COLOR[l.level], l.level === 'tool' && 'pl-3')}>
                   {l.level === 'tool' && <span className="text-slate-600">⚙ </span>}
@@ -163,6 +164,10 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
                     <span>
                       {done}/{os.length} órdenes
                     </span>
+                    <span className={cx('rounded px-1.5', r.live ? 'bg-violet-500/15 text-violet-300' : 'bg-white/5')}>
+                      {r.live ? 'Claude' : 'simulado'}
+                    </span>
+                    {r.costUsd != null && r.costUsd > 0 && <span>${r.costUsd.toFixed(3)}</span>}
                     <span className="ml-auto uppercase tracking-wider" style={{ color: r.status === 'done' ? '#34d399' : r.status === 'waiting' ? '#f59e0b' : '#38bdf8' }}>
                       {r.status}
                     </span>
@@ -170,6 +175,12 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
                   <div className="mt-1.5 h-1 overflow-hidden rounded bg-white/5">
                     <div className="h-full rounded transition-all" style={{ width: `${(done / Math.max(os.length, 1)) * 100}%`, background: p.color }} />
                   </div>
+                  {r.result && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-[11px] text-slate-400 hover:text-slate-200">Resultado</summary>
+                      <p className="mt-1 whitespace-pre-wrap text-xs leading-relaxed text-slate-300">{r.result}</p>
+                    </details>
+                  )}
                 </li>
               )
             })}
