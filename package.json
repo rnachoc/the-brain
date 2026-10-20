@@ -9,6 +9,7 @@
   "scripts": {
     "postinstall": "node scripts/ensure-config.mjs",
     "dev": "concurrently -k -n server,web -c magenta,cyan \"npm run dev -w server\" \"npm run dev -w web\"",
+    "login": "node scripts/claude-login.mjs",
     "build": "npm run build -w web",
     "typecheck": "npm run typecheck -w server && npm run build -w web"
   },
