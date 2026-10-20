@@ -3,11 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "web"
+    "web",
+    "server"
   ],
   "scripts": {
     "postinstall": "node scripts/ensure-config.mjs",
-    "dev": "npm run dev -w web",
-    "build": "npm run build -w web"
+    "dev": "concurrently -k -n server,web -c magenta,cyan \"npm run dev -w server\" \"npm run dev -w web\"",
+    "build": "npm run build -w web",
+    "typecheck": "npm run typecheck -w server && npm run build -w web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.5"
   }
 }
