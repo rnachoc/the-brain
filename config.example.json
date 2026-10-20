@@ -1,0 +1,75 @@
+{
+  "defaults": {
+    "model": "claude-sonnet-5-5",
+    "routerModel": "claude-haiku-5-5",
+    "tools": ["Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"]
+  },
+  "projects": [
+    {
+      "id": "jobs",
+      "name": "Búsqueda de empleo",
+      "aliases": ["jobs", "empleo", "linkedin"],
+      "color": "#38bdf8",
+      "icon": "💼",
+      "agents": 1,
+      "folder": "workspaces/jobs",
+      "description": "Respuestas a recruiters, CV adaptado a cada oferta y preparación de entrevistas.",
+      "keywords": ["recruiter", "reclutador", "cv", "currículum", "entrevista", "oferta", "empleo", "trabajo", "salario", "linkedin"],
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
+      "systemPrompt": "Eres el agente de búsqueda de empleo del usuario. Lee brain/perfil.md para conocer su perfil y el tipo de puesto que busca. Redactas respuestas a recruiters, mensajes de networking, adaptas el CV a cada oferta y preparas entrevistas. Tono profesional, cercano y directo. Nunca envíes nada: deja siempre el borrador y pide aprobación."
+    },
+    {
+      "id": "freelance",
+      "name": "Clientes Freelance",
+      "aliases": ["freelance", "clientes"],
+      "color": "#34d399",
+      "icon": "🏪",
+      "agents": 1,
+      "folder": "workspaces/freelance",
+      "description": "Prospección de clientes, propuestas, presupuestos y entregas.",
+      "keywords": ["cliente", "clientes", "propuesta", "presupuesto", "precio", "precios", "factura", "prospección", "web", "diseño"],
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
+      "systemPrompt": "Eres el agente comercial del trabajo freelance del usuario. Prospectas clientes potenciales, preparas propuestas claras con precios por paquetes y organizas las entregas. Sé concreto con precios y plazos. Nunca contactes a nadie: deja el borrador y pide aprobación."
+    },
+    {
+      "id": "app",
+      "name": "Side Project",
+      "aliases": ["app", "sideproject", "dev"],
+      "color": "#fb7185",
+      "icon": "🚀",
+      "agents": 1,
+      "folder": "workspaces/app",
+      "description": "Desarrollo y planificación de un proyecto personal de software.",
+      "keywords": ["app", "feature", "sprint", "backlog", "bug", "roadmap", "pantalla", "mvp", "código", "deploy"],
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "Bash", "WebSearch"],
+      "systemPrompt": "Eres el tech lead y product manager del proyecto personal del usuario. Planificas el roadmap, priorizas el backlog, escribes especificaciones y código y revisas decisiones técnicas. Sé pragmático: MVP primero. Nunca despliegues ni publiques nada: deja el resultado y pide aprobación."
+    },
+    {
+      "id": "social",
+      "name": "Contenido y Redes",
+      "aliases": ["social", "redes", "contenido"],
+      "color": "#e879f9",
+      "icon": "📣",
+      "agents": 1,
+      "folder": "workspaces/social",
+      "description": "Ideas de contenido, calendario editorial y borradores para redes.",
+      "keywords": ["post", "publicación", "instagram", "twitter", "tiktok", "contenido", "promo", "promoción", "redes", "newsletter", "prensa"],
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
+      "systemPrompt": "Eres el community manager del usuario. Propones ideas de contenido, mantienes un calendario editorial y redactas publicaciones adaptadas a cada red. Tono con personalidad y cercano. Nunca publiques ni envíes nada: deja el borrador y pide aprobación."
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "aliases": ["general"],
+      "color": "#94a3b8",
+      "icon": "🧭",
+      "agents": 1,
+      "folder": "workspaces/general",
+      "description": "Agente de respaldo para todo lo que no encaja en otro proyecto.",
+      "keywords": [],
+      "fallback": true,
+      "tools": ["Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"],
+      "systemPrompt": "Eres el asistente general del usuario. Resuelves peticiones que no pertenecen a ningún proyecto concreto: investigación, resúmenes, organización. Si algo encaja mejor en un proyecto, dilo. Nunca envíes ni publiques nada: deja el borrador y pide aprobación."
+    }
+  ]
+}
