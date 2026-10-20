@@ -12,7 +12,7 @@ body {
   margin: 0;
   background: #05070f;
   color-scheme: dark;
-  font-family: Inter, system-ui, sans-serif;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -61,6 +61,46 @@ body {
 
 .waiting-bounce {
   animation: bob 0.9s ease-in-out infinite;
+}
+
+/* Persona caminando entre la cama y la mesa */
+.walk-bob {
+  animation: bob 0.32s ease-in-out infinite;
+}
+.leg-a,
+.leg-b {
+  transform-box: fill-box;
+  transform-origin: top;
+  animation: step 0.32s ease-in-out infinite alternate;
+}
+.leg-b {
+  animation-direction: alternate-reverse;
+}
+@keyframes step {
+  from { transform: rotate(-18deg); }
+  to { transform: rotate(18deg); }
+}
+
+/* Durmiendo: la manta sube y baja, y flotan las Z */
+.breathe {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: breathe 3.2s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.12); }
+}
+.zzz text {
+  opacity: 0;
+  animation: zzz 3s ease-in-out infinite;
+}
+.zzz text:nth-child(2) { animation-delay: 0.6s; }
+.zzz text:nth-child(3) { animation-delay: 1.2s; }
+@keyframes zzz {
+  0% { opacity: 0; transform: translateY(2px); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-6px); }
 }
 
 .screen-flicker {
@@ -113,16 +153,16 @@ body {
 
 .bubble {
   position: relative;
-  max-width: 190px;
-  padding: 5px 9px;
-  border-radius: 10px;
+  max-width: 180px;
+  padding: 4px 8px;
+  border-radius: 9px;
   background: rgba(11, 16, 32, 0.88);
   border: 1px solid rgba(148, 163, 184, 0.2);
   color: #94a3b8;
-  font-size: 10.5px;
+  font-size: 10px;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   backdrop-filter: blur(4px);
