@@ -1,0 +1,13 @@
+{
+  "name": "the-brain",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "web"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/ensure-config.mjs",
+    "dev": "npm run dev -w web",
+    "build": "npm run build -w web"
+  }
+}
