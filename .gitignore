@@ -1,0 +1,16 @@
+node_modules/
+dist/
+*.log
+
+# Secretos
+.env
+.env.*
+!.env.example
+
+# Datos personales: cada usuario tiene los suyos y nunca se suben
+config.json
+brain/
+workspaces/
+data/
+
+.claude/settings.local.json
