@@ -2,7 +2,7 @@
 import { mkdirSync } from 'node:fs'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { Project, Run } from '../../../shared/types'
-import { BRAIN_DIR, loadConfig, projectFolder } from '../config'
+import { agentEnv, BRAIN_DIR, loadConfig, projectFolder } from '../config'
 import { repo } from '../db'
 import { hq } from '../hq'
 import { DISALLOWED_PATTERNS, makeGuard } from './guard'
@@ -54,6 +54,7 @@ export async function runClaude(project: Project, run: Run): Promise<void> {
       permissionMode: 'default',
       settingSources: [],
       maxTurns: MAX_TURNS,
+      env: agentEnv(),
     },
   })
 

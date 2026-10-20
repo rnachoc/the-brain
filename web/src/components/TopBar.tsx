@@ -52,7 +52,7 @@ export function TopBar() {
           </span>
         ) : (
           <span
-            title={live ? 'Router con Claude y agentes reales en los proyectos live' : 'Añade ANTHROPIC_API_KEY en .env para usar Claude'}
+            title={live ? 'Router con Claude y agentes reales en los proyectos live' : 'Ejecuta "npm run login" y pega el token en .env para usar Claude'}
             className={cx(
               'rounded-full px-2.5 py-1 text-xs font-medium ring-1',
               live ? 'bg-violet-500/10 text-violet-200 ring-violet-400/30' : 'bg-white/5 text-slate-400 ring-white/10',

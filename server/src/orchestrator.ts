@@ -1,23 +1,21 @@
 // Recibe los mensajes del chat, los enruta y lanza los agentes (en paralelo si hay varios).
-import Anthropic from '@anthropic-ai/sdk'
 import type { Project } from '../../shared/types'
 import { runClaude } from './agents/claude'
 import { runSimulated } from './agents/simulated'
-import { hasApiKey, loadConfig } from './config'
+import { hasClaude, loadConfig } from './config'
 import { repo } from './db'
 import { hq, uid } from './hq'
 import { route, type RouteDecision } from './router'
 
-let client: Anthropic | null = null
-const anthropic = () => (hasApiKey() ? (client ??= new Anthropic()) : null)
-
 const VIA: Record<string, string> = { mention: '@mención', model: 'router', keywords: 'palabras clave' }
 
 function startRun(project: Project, prompt: string) {
-  const live = hasApiKey() && !!project.live
+  const live = hasClaude() && !!project.live
   const run = hq.createRun(project.id, prompt, live)
   const runner = live ? runClaude : runSimulated
   runner(project, run).catch((err: unknown) => {
+    // Si el agente ya cerró el run con su propio error, no lo registramos dos veces.
+    if (repo.getRun(run.id)?.status === 'failed') return
     const msg = err instanceof Error ? err.message : String(err)
     for (const o of repo.ordersOfRun(run.id))
       if (o.status !== 'done' && o.status !== 'rejected') hq.patchOrder(o.id, { status: 'failed', note: msg })
@@ -44,11 +42,11 @@ export async function handleChat(text: string) {
 
   let decision: RouteDecision
   try {
-    decision = await route(text, config, anthropic())
+    decision = await route(text, config, hasClaude())
   } catch (err) {
     const fallback = config.projects.find((p) => p.fallback) ?? config.projects[0]
     hq.log(fallback.id, undefined, 'warn', `Router con Claude no disponible, uso palabras clave: ${err instanceof Error ? err.message : err}`)
-    decision = await route(text, config, null)
+    decision = await route(text, config, false)
   }
 
   if (decision.kind === 'ask') {

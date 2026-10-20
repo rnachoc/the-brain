@@ -44,4 +44,21 @@ export function projectFolder(p: Project): string {
   return dir
 }
 
-export const hasApiKey = () => !!process.env.ANTHROPIC_API_KEY?.trim()
+/**
+ * Cómo se autentica Claude: con el token de tu suscripción (npm run login) o con una API key.
+ * El Agent SDK lee ambas variables del entorno. Sin ninguna, todo funciona en modo simulado.
+ */
+export function claudeAuth(): 'subscription' | 'api_key' | null {
+  if (process.env.CLAUDE_CODE_OAUTH_TOKEN?.trim()) return 'subscription'
+  if (process.env.ANTHROPIC_API_KEY?.trim()) return 'api_key'
+  return null
+}
+
+export const hasClaude = () => claudeAuth() !== null
+
+/** Entorno para Claude Code: con suscripción no le pasamos la API key, que tendría prioridad. */
+export function agentEnv(): Record<string, string | undefined> {
+  const env = { ...process.env }
+  if (claudeAuth() === 'subscription') delete env.ANTHROPIC_API_KEY
+  return env
+}

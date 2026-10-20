@@ -2,7 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { LogLevel, Order, RouterQuestion, Run, ServerEvent, Snapshot } from '../../shared/types'
-import { hasApiKey } from './config'
+import { hasClaude } from './config'
 import { repo } from './db'
 
 export const bus = new EventEmitter()
@@ -22,7 +22,7 @@ export const hq = {
       orders: repo.listOrders(runs.map((r) => r.id)),
       logs: repo.listLogs(),
       question,
-      live: hasApiKey(),
+      live: hasClaude(),
     }
   },
 

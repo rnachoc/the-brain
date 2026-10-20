@@ -7,7 +7,7 @@ import { ROOT } from './config'
 loadEnv({ path: join(ROOT, '.env'), quiet: true })
 
 // Después de cargar .env: estos módulos leen la API key.
-const { hasApiKey, loadConfig } = await import('./config')
+const { claudeAuth, loadConfig } = await import('./config')
 const { repo } = await import('./db')
 const { bus, hq, resolveApproval } = await import('./hq')
 const { answerQuestion, handleChat } = await import('./orchestrator')
@@ -56,10 +56,11 @@ await app.listen({ port: PORT, host: '127.0.0.1' })
 const { projects } = loadConfig()
 const live = projects.filter((p) => p.live).map((p) => p.name)
 console.log(`\n  🧠 The Brain · servidor en http://localhost:${PORT}`)
+const auth = claudeAuth()
 console.log(
-  hasApiKey()
-    ? `  ✓ API key detectada · router con Claude · agentes reales: ${live.join(', ') || 'ninguno (marca "live": true en config.json)'}`
-    : '  ⚠ Sin ANTHROPIC_API_KEY en .env · router por palabras clave y agentes simulados',
+  auth
+    ? `  ✓ Claude conectado (${auth === 'subscription' ? 'tu suscripción' : 'API key'}) · agentes reales: ${live.join(', ') || 'ninguno (marca "live": true en config.json)'}`
+    : '  ⚠ Claude sin conectar · modo simulado. Ejecuta "npm run login" y pega el token en .env',
 )
 if (interrupted) console.log(`  ↺ ${interrupted} run(s) interrumpidos por un reinicio marcados como fallidos`)
 console.log()
