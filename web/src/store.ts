@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { projects } from './config'
-import { createEngine } from './mock/engine'
 import { seed } from './mock/seed'
 import type {
   AgentStatus,
@@ -12,6 +11,7 @@ import type {
   RouterQuestion,
   Run,
   Schedule,
+  ServerEvent,
   Tab,
 } from './types'
 
@@ -24,6 +24,8 @@ export interface State {
   notes: BrainNote[]
   question: RouterQuestion | null
   routerNote: RouterNote | null
+  connected: boolean
+  live: boolean
   tab: Tab
   selectedProjectId: string | null
   chatDraft: string
@@ -40,43 +42,97 @@ export interface State {
   toggleSchedule: (id: string) => void
 }
 
-export const useStore = create<State>()((set, get) => {
-  const engine = createEngine(get, set)
-  setTimeout(engine.boot, 0)
+const post = (url: string, body?: unknown) =>
+  fetch(url, {
+    method: 'POST',
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))))
 
-  return {
-    projects,
-    ...seed(),
-    question: null,
-    routerNote: null,
-    tab: 'office',
-    selectedProjectId: null,
-    chatDraft: '',
+const upsert = <T extends { id: string }>(list: T[], item: T): T[] => {
+  const i = list.findIndex((x) => x.id === item.id)
+  if (i === -1) return [...list, item]
+  const next = list.slice()
+  next[i] = item
+  return next
+}
 
-    setTab: (tab) => set({ tab }),
-    selectProject: (selectedProjectId) => set({ selectedProjectId }),
-    setChatDraft: (chatDraft) => set({ chatDraft }),
-    send: (text) => {
-      if (!text.trim()) return
-      set({ chatDraft: '' })
-      engine.dispatch(text)
-    },
-    answerQuestion: (ids) => engine.answer(ids),
-    dismissQuestion: () => set({ question: null }),
-    approve: (id) => engine.resolve(id, true),
-    reject: (id) => engine.resolve(id, false),
-    saveNote: (path, content) =>
-      set((s) => {
-        const note = { path, content, updatedAt: Date.now(), updatedBy: 'tú' }
-        const exists = s.notes.some((n) => n.path === path)
-        return { notes: exists ? s.notes.map((n) => (n.path === path ? note : n)) : [...s.notes, note] }
-      }),
-    toggleSchedule: (id) =>
-      set((s) => ({ schedules: s.schedules.map((x) => (x.id === id ? { ...x, enabled: !x.enabled } : x)) })),
+export const useStore = create<State>()((set) => ({
+  projects,
+  runs: [],
+  orders: [],
+  logs: [],
+  ...seed(),
+  question: null,
+  routerNote: null,
+  connected: false,
+  live: false,
+  tab: 'office',
+  selectedProjectId: null,
+  chatDraft: '',
+
+  setTab: (tab) => set({ tab }),
+  selectProject: (selectedProjectId) => set({ selectedProjectId }),
+  setChatDraft: (chatDraft) => set({ chatDraft }),
+  send: (text) => {
+    if (!text.trim()) return
+    set({ chatDraft: '' })
+    post('/api/chat', { text }).catch(() => set({ chatDraft: text }))
+  },
+  answerQuestion: (projectIds) => void post('/api/question/answer', { projectIds }),
+  dismissQuestion: () => void post('/api/question/dismiss'),
+  approve: (id) => void post(`/api/orders/${id}/approve`),
+  reject: (id) => void post(`/api/orders/${id}/reject`),
+  saveNote: (path, content) =>
+    set((s) => {
+      const note = { path, content, updatedAt: Date.now(), updatedBy: 'tú' }
+      const exists = s.notes.some((n) => n.path === path)
+      return { notes: exists ? s.notes.map((n) => (n.path === path ? note : n)) : [...s.notes, note] }
+    }),
+  toggleSchedule: (id) =>
+    set((s) => ({ schedules: s.schedules.map((x) => (x.id === id ? { ...x, enabled: !x.enabled } : x)) })),
+}))
+
+// ---------- Tiempo real ----------
+
+function apply(e: ServerEvent) {
+  useStore.setState((s) => {
+    switch (e.type) {
+      case 'snapshot':
+        return { ...e.state, connected: true }
+      case 'run':
+        return { runs: upsert(s.runs, e.run) }
+      case 'order':
+        return { orders: upsert(s.orders, e.order) }
+      case 'log':
+        return { logs: [...s.logs.slice(-1999), e.log] }
+      case 'question':
+        return { question: e.question }
+      case 'routed':
+        return { routerNote: e.note }
+    }
+  })
+}
+
+let retry = 500
+function connect() {
+  const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`)
+  ws.onmessage = (m) => {
+    const e = JSON.parse(m.data) as ServerEvent
+    // Solo damos la conexión por buena cuando el servidor responde de verdad.
+    if (e.type === 'snapshot') retry = 500
+    apply(e)
   }
-})
+  ws.onclose = () => {
+    useStore.setState({ connected: false })
+    setTimeout(connect, (retry = Math.min(retry * 2, 8000)))
+  }
+}
+connect()
 
-// Selectores derivados: devuelven primitivos para no provocar renders de más.
+// ---------- Selectores derivados ----------
+// Devuelven primitivos para no provocar renders de más.
+
 export function agentStatus(s: State, projectId: string): AgentStatus {
   let running = false
   for (const r of s.runs) {
