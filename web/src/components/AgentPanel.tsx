@@ -3,7 +3,7 @@ import { projectById } from '../config'
 import { agentStatus, useStore } from '../store'
 import type { LogLevel } from '../types'
 import { AGENT_META, cx, fmtDateTime, fmtTime, timeAgo } from '../util'
-import { Plus, X } from 'lucide-react'
+import { Plus, Square, X } from 'lucide-react'
 import { DraftCard, StatusChip } from './bits'
 import { ProjectIcon } from './icons'
 
@@ -38,6 +38,7 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
   const allOrders = useStore((s) => s.orders)
   const allLogs = useStore((s) => s.logs)
   const setDraft = useStore((s) => s.setChatDraft)
+  const cancelRun = useStore((s) => s.cancelRun)
   const [tab, setTab] = useState<PanelTab>('orders')
   const logRef = useRef<HTMLDivElement>(null)
 
@@ -112,6 +113,11 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
                 <div className="mb-1.5 flex items-baseline gap-2">
                   <span className="truncate text-sm font-medium text-slate-200">«{r.prompt}»</span>
                   <span className="ml-auto shrink-0 text-[11px] text-slate-500">{timeAgo(r.startedAt)}</span>
+                  {(r.status === 'running' || r.status === 'waiting') && (
+                    <button onClick={() => cancelRun(r.id)} className="btn btn-ghost-danger btn-sm shrink-0" title="Detener este run">
+                      <Square size={11} strokeWidth={3} /> Detener
+                    </button>
+                  )}
                 </div>
                 <ol className="space-y-1 border-l pl-3" style={{ borderColor: `${p.color}40` }}>
                   {orders

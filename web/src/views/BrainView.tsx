@@ -13,9 +13,13 @@ export function BrainView() {
   const [text, setText] = useState(note?.content ?? '')
   const dirty = note ? text !== note.content : false
 
+  // Las notas llegan del servidor: elegimos la primera y refrescamos si alguien (o un agente) la edita.
+  useEffect(() => {
+    if (!note && notes.length) setPath(notes[0].path)
+  }, [note, notes])
   useEffect(() => {
     setText(note?.content ?? '')
-  }, [path]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [path, note?.content])
 
   const tree = useMemo(() => {
     const groups = new Map<string, typeof notes>()
@@ -32,7 +36,7 @@ export function BrainView() {
     const name = window.prompt('Ruta de la nota (p. ej. proyectos/nuevo.md)')
     if (!name) return
     const p = name.endsWith('.md') ? name : `${name}.md`
-    if (!notes.some((n) => n.path === p)) save(p, `# ${p.split('/').pop()!.replace(/\.md$/, '')}\n\n`)
+    if (!notes.some((n) => n.path === p)) void save(p, `# ${p.split('/').pop()!.replace(/\.md$/, '')}\n\n`)
     setPath(p)
     setMode('edit')
   }

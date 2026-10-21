@@ -38,7 +38,8 @@ export interface State {
   dismissQuestion: () => void
   approve: (orderId: string) => void
   reject: (orderId: string) => void
-  saveNote: (path: string, content: string) => void
+  saveNote: (path: string, content: string) => Promise<boolean>
+  cancelRun: (runId: string) => void
   toggleSchedule: (id: string) => void
 }
 
@@ -62,6 +63,7 @@ export const useStore = create<State>()((set) => ({
   runs: [],
   orders: [],
   logs: [],
+  notes: [],
   ...seed(),
   question: null,
   routerNote: null,
@@ -84,11 +86,12 @@ export const useStore = create<State>()((set) => ({
   approve: (id) => void post(`/api/orders/${id}/approve`),
   reject: (id) => void post(`/api/orders/${id}/reject`),
   saveNote: (path, content) =>
-    set((s) => {
-      const note = { path, content, updatedAt: Date.now(), updatedBy: 'tú' }
-      const exists = s.notes.some((n) => n.path === path)
-      return { notes: exists ? s.notes.map((n) => (n.path === path ? note : n)) : [...s.notes, note] }
-    }),
+    fetch('/api/brain', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path, content }),
+    }).then((r) => r.ok),
+  cancelRun: (id) => void post(`/api/runs/${id}/cancel`),
   toggleSchedule: (id) =>
     set((s) => ({ schedules: s.schedules.map((x) => (x.id === id ? { ...x, enabled: !x.enabled } : x)) })),
 }))
@@ -110,6 +113,10 @@ function apply(e: ServerEvent) {
         return { question: e.question }
       case 'routed':
         return { routerNote: e.note }
+      case 'note': {
+        const others = s.notes.filter((n) => n.path !== e.note.path)
+        return { notes: [...others, e.note].sort((a, b) => a.path.localeCompare(b.path)) }
+      }
     }
   })
 }
