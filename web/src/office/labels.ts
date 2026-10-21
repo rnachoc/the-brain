@@ -66,9 +66,11 @@ export function placeLabels(rooms: { p: Project; gx: number; gy: number }[]): Ma
     const back = iso(x0, y0, WALL_H)
     const right = iso(x0 + ROOM_W, y0, WALL_H / 2)
     const left = iso(x0, y0 + ROOM_D, WALL_H / 2)
+    // Preferencia: debajo (deslizándose a los lados si choca), luego encima, y solo al final a un lado.
+    const shifts = [0, ...Array.from({ length: 8 }, (_, i) => (i + 1) * 15).flatMap((d) => [d, -d])]
     const candidates: Rect[] = [
-      { x: front[0] - w / 2, y: front[1] + GAP, w, h: LABEL_H },
-      { x: back[0] - w / 2, y: back[1] - GAP - LABEL_H, w, h: LABEL_H },
+      ...shifts.map((dx) => ({ x: front[0] - w / 2 + dx, y: front[1] + GAP, w, h: LABEL_H })),
+      ...shifts.map((dx) => ({ x: back[0] - w / 2 + dx, y: back[1] - GAP - LABEL_H, w, h: LABEL_H })),
       { x: right[0] + GAP, y: right[1] - LABEL_H / 2, w, h: LABEL_H },
       { x: left[0] - GAP - w, y: left[1] - LABEL_H / 2, w, h: LABEL_H },
     ]
