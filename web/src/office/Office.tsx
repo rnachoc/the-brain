@@ -67,10 +67,10 @@ function BrainCore() {
       </circle>
       <foreignObject x={lx - 80} y={ly + 4} width={160} height={40}>
         <div className="flex flex-col items-center">
-          <div className="rounded-md border border-violet-400/40 bg-violet-950/70 px-2.5 py-1 text-[11px] font-semibold tracking-[0.2em] text-violet-200 backdrop-blur">
+          <div className="rounded-md border border-violet-400/40 bg-violet-950/70 px-2.5 py-1 font-pixel text-[13px] tracking-[0.16em] text-violet-100 backdrop-blur">
             THE BRAIN
           </div>
-          <div className="mt-0.5 text-[9px] text-slate-500">{notes} notas compartidas</div>
+          <div className="mt-1 font-pixel text-[10px] text-slate-500">{notes} notas compartidas</div>
         </div>
       </foreignObject>
     </g>

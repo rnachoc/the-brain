@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { ProjectIcon } from '../components/icons'
 import { agentStatus, lastAction, useStore } from '../store'
 import type { AgentStatus, Project } from '../types'
 import { AGENT_META, cx } from '../util'
@@ -356,15 +357,16 @@ export function RoomOverlay({ project: p, gx, gy }: Props) {
             className="room-label"
             style={{ ['--accent' as string]: p.color }}
           >
-            <span className="text-[13px] leading-none">{p.icon}</span>
-            <span className="truncate font-semibold text-slate-100">{p.name}</span>
-            <span className="flex items-center gap-1 pl-1 text-[9px] uppercase tracking-wider" style={{ color: meta.color }}>
-              <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
+            <ProjectIcon icon={p.icon} color={p.color} size="xs" />
+            <span className="truncate font-pixel text-[13px] font-medium tracking-[0.02em] text-slate-50">{p.name}</span>
+            <span className="h-3 w-px bg-white/10" />
+            <span className="flex items-center gap-1 font-pixel text-[10px] uppercase tracking-[0.08em]" style={{ color: meta.color }}>
+              <span className={cx('inline-block h-1.5 w-1.5 rounded-full', status !== 'idle' && 'animate-pulse')} style={{ background: meta.color }} />
               {meta.label}
             </span>
           </button>
         </div>
-        <div className="mt-0.5 text-center text-[9px] text-slate-500">
+        <div className="mt-1 text-center font-pixel text-[10px] tracking-wide text-slate-500">
           {p.agents} {p.agents === 1 ? 'agente' : 'agentes'}
         </div>
       </foreignObject>

@@ -3,7 +3,9 @@ import { projectById } from '../config'
 import { agentStatus, useStore } from '../store'
 import type { LogLevel } from '../types'
 import { AGENT_META, cx, fmtDateTime, fmtTime, timeAgo } from '../util'
+import { Plus, X } from 'lucide-react'
 import { DraftCard, StatusChip } from './bits'
+import { ProjectIcon } from './icons'
 
 type PanelTab = 'orders' | 'log' | 'history'
 
@@ -53,9 +55,7 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
     <aside className="panel-in absolute bottom-0 right-0 top-0 z-30 flex w-[440px] max-w-full flex-col border-l border-white/10 bg-hq-panel/95 shadow-2xl backdrop-blur-xl">
       <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${p.color}, transparent)` }} />
       <div className="flex items-start gap-3 px-5 pb-3 pt-4">
-        <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl" style={{ background: `${p.color}1f`, boxShadow: `inset 0 0 0 1px ${p.color}55` }}>
-          {p.icon}
-        </div>
+        <ProjectIcon icon={p.icon} color={p.color} size="lg" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate text-lg font-semibold text-white">{p.name}</h2>
@@ -73,8 +73,8 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
             ))}
           </div>
         </div>
-        <button onClick={onClose} className="rounded-md px-2 py-1 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Cerrar">
-          ✕
+        <button onClick={onClose} className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white" aria-label="Cerrar">
+          <X size={16} />
         </button>
       </div>
 
@@ -97,9 +97,9 @@ function Panel({ projectId, onClose }: { projectId: string; onClose: () => void 
         ))}
         <button
           onClick={() => setDraft(`@${p.aliases[0]} `)}
-          className="ml-auto rounded-md px-2 py-1 text-xs text-slate-400 hover:bg-white/5 hover:text-white"
+          className="btn btn-ghost btn-sm ml-auto"
         >
-          + Nueva orden
+          <Plus size={13} /> Nueva orden
         </button>
       </div>
 
