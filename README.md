@@ -40,6 +40,7 @@ It runs entirely on your machine. Agents are powered by the [Claude Agent SDK](h
 - **Human approval for anything external** — agents never send, publish or pay. They prepare the full draft and pause until you click **Approve** or **Reject**. Approving only marks the draft as ready for *you* to send.
 - **Agent side panel** — click a room to see that agent's orders (with drafts), a live log of every tool it uses, its run history with results and cost, and its system prompt.
 - **Full audit log** — every message, run, order and tool call is stored in a local SQLite database, including actions that were blocked.
+- **A shared, persistent memory** — The Brain is a folder of markdown notes on your disk. Every agent gets the essentials when it starts and saves what it learns with `brain_write` (append or edit, never delete, with a backup of every previous version).
 - **Tasks, Calendar and Brain tabs** — all orders with filters, scheduled tasks on a calendar, and a markdown explorer/editor for the shared notes.
 - **Add a project by editing one file** — `config.json` defines every agent: name, color, icon, system prompt, folder, tools and model.
 
@@ -73,7 +74,8 @@ What happens when you send a message:
 2. **Planning.** Each selected agent starts and calls `plan_orders` to publish its plan to the queue.
 3. **Execution.** The agent works through the orders with its allowed tools (read/write files in its folder, web search, etc.), calling `update_order` as it goes. Everything it does streams to the live log.
 4. **Approval.** For anything external it calls `request_approval` with the complete draft. The agent pauses; the draft appears in the queue and in the agent panel (and is saved to `workspaces/<project>/borradores/`). You approve or reject, and the agent continues.
-5. **Result.** The run ends with a short summary and its cost. Orders the agent left unfinished are marked as failed, never as done.
+5. **Memory.** Anything worth remembering (decisions, stable facts, your preferences) is saved to The Brain with `brain_write`, so every agent knows it next time.
+6. **Result.** The run ends with a short summary and its cost. Orders the agent left unfinished are marked as failed, never as done. You can stop a run at any time with **Detener** in the agent panel.
 
 ## Requirements
 
@@ -186,7 +188,9 @@ With an empty `.env` (or none at all), The Brain runs fully simulated. The route
 
 - **Tasks**: every order across projects, filterable by project and status, plus scheduled tasks.
 - **Calendar**: month view of scheduled tasks and past runs.
-- **Brain**: browse and edit the shared markdown notes.
+- **Brain**: browse and edit the shared notes in `brain/`. Changes made by agents appear live, and each note shows who edited it last.
+
+On first start The Brain creates `brain/index.md`, `perfil.md`, `decisiones.md` and one `proyectos/<id>.md` per project. Fill in **perfil.md**: every agent reads it.
 
 ## Configuring your agents
 
@@ -203,7 +207,6 @@ Everything about your agents lives in **`config.json`**. It's created from `conf
     {
       "id": "shop",
       "name": "My Online Shop",
-      "live": true,
       "aliases": ["shop", "store"],
       "color": "#22d3ee",
       "icon": "cart",
@@ -222,7 +225,7 @@ Everything about your agents lives in **`config.json`**. It's created from `conf
 | --- | --- |
 | `id` | Unique identifier (lowercase, no spaces). |
 | `name` | Name shown on the room and in the UI. |
-| `live` | `true` → uses a real Claude agent when Claude is connected. Otherwise the agent is simulated. |
+| `live` | Optional. With Claude connected every agent is real; set `false` to keep one simulated. |
 | `aliases` | What you can type after `@` in the chat. |
 | `color`, `icon` | Room accent color (hex) and icon name: `briefcase`, `store`, `rocket`, `megaphone`, `compass`, `trophy`, `headphones`, `music`, `book`, `code`, `cart`, `building`, `palette`, `pen`, `plane`, `home`, `heart`, `wallet`, `fitness`, `study`, `bot`. |
 | `agents` | Number of desks drawn in the room (visual). |
@@ -256,7 +259,7 @@ Nothing personal is committed. These paths are git-ignored:
 | --- | --- |
 | `config.json` | Your agents, prompts and project details. |
 | `.env` | Your token or API key. |
-| `brain/` | Shared notes the agents read and write. |
+| `brain/` | Shared notes the agents read and write (previous versions in `brain/.history/`). |
 | `workspaces/` | Everything agents produce, including drafts. |
 | `data/` | The SQLite database (messages, runs, orders, logs). |
 
@@ -284,14 +287,15 @@ server/               Node + Fastify + WebSocket + SQLite
   src/router.ts       @mentions, Claude router, keyword fallback
   src/orchestrator.ts message → parallel agent runs
   src/hq.ts           state changes, events, approval waits
+  src/brain.ts        Brain notes on disk, backups, agent context
   src/db.ts           SQLite persistence
   src/agents/
     claude.ts         real agent (Claude Agent SDK)
-    tools.ts          MCP tools: plan_orders, update_order, request_approval
+    tools.ts          MCP tools: plan_orders, update_order, request_approval, brain_write
     guard.ts          tool permission guard
     simulated.ts      demo agent
 web/                  React + Vite + Tailwind
-  src/office/         isometric SVG office and The Brain core
+  src/office/         isometric SVG office, The Brain core, label placement
   src/components/     top bar, chat, order queue, agent panel
   src/views/          Tasks, Calendar, Brain
 ```
@@ -328,7 +332,7 @@ web/                  React + Vite + Tailwind
 | --- | --- | --- |
 | a | Isometric UI with sample data | ✅ |
 | b | Server, chat, routing and a real agent | ✅ |
-| c | All agents live, persistent Brain (agents read and write `/brain`) | ⏳ |
+| c | All agents live, persistent Brain (agents read and write `/brain`), cancel runs | ✅ |
 | d | Scheduled tasks and calendar backed by the server | ⏳ |
 
-Until phases c and d, Brain notes and scheduled tasks in the UI are sample data kept in the browser.
+Until phase d, scheduled tasks in the UI are sample data kept in the browser.
