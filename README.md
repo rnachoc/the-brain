@@ -206,7 +206,7 @@ Everything about your agents lives in **`config.json`**. It's created from `conf
       "live": true,
       "aliases": ["shop", "store"],
       "color": "#22d3ee",
-      "icon": "🛒",
+      "icon": "cart",
       "agents": 1,
       "folder": "workspaces/shop",
       "description": "Catalog, orders and campaigns.",
@@ -224,7 +224,7 @@ Everything about your agents lives in **`config.json`**. It's created from `conf
 | `name` | Name shown on the room and in the UI. |
 | `live` | `true` → uses a real Claude agent when Claude is connected. Otherwise the agent is simulated. |
 | `aliases` | What you can type after `@` in the chat. |
-| `color`, `icon` | Room accent color (hex) and emoji. |
+| `color`, `icon` | Room accent color (hex) and icon name: `briefcase`, `store`, `rocket`, `megaphone`, `compass`, `trophy`, `headphones`, `music`, `book`, `code`, `cart`, `building`, `palette`, `pen`, `plane`, `home`, `heart`, `wallet`, `fitness`, `study`, `bot`. |
 | `agents` | Number of desks drawn in the room (visual). |
 | `folder` | The agent's working folder. It's created automatically and is the only place the agent can write. |
 | `description` | One line the router uses to understand the project. |
