@@ -1,3 +1,4 @@
+import { Check, ChevronDown, ChevronUp, FileText, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import type { Order, OrderStatus } from '../types'
@@ -18,48 +19,55 @@ function Row({ o }: { o: Order }) {
   const approve = useStore((s) => s.approve)
   const reject = useStore((s) => s.reject)
   const [open, setOpen] = useState(false)
-  const hasDraft = !!o.draft
   const waiting = o.status === 'awaiting_approval'
+
   return (
-    <li className={cx('rounded-lg px-3 py-1.5', waiting ? 'bg-amber-400/[0.06]' : 'hover:bg-white/[0.03]')}>
-      <div className="flex items-center gap-3">
+    <li className={cx('rounded-lg', waiting && 'bg-amber-400/[0.05] ring-1 ring-inset ring-amber-400/15')}>
+      <div className="grid grid-cols-[180px_minmax(0,1fr)_auto] items-center gap-4 px-3 py-1.5 hover:bg-white/[0.02]">
         <ProjectTag id={o.projectId} onClick={() => select(o.projectId)} />
-        <button
-          onClick={() => hasDraft && setOpen(!open)}
-          className={cx('min-w-0 flex-1 truncate text-left text-sm', o.status === 'done' ? 'text-slate-400' : 'text-slate-100', hasDraft && 'hover:underline')}
-        >
-          {o.title}
-        </button>
-        {hasDraft && (
-          <button onClick={() => setOpen(!open)} className="text-[11px] text-slate-400 hover:text-white">
-            {open ? 'ocultar borrador' : 'ver borrador'}
-          </button>
-        )}
-        {waiting && (
-          <>
+        <div className="flex min-w-0 items-center gap-2">
+          <span className={cx('truncate text-[13px]', o.status === 'done' || o.status === 'rejected' ? 'text-slate-500' : 'text-slate-100')}>
+            {o.title}
+          </span>
+          {o.draft && (
             <button
-              onClick={() => approve(o.id)}
-              className="rounded-md bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-emerald-950 hover:bg-emerald-400"
+              onClick={() => setOpen(!open)}
+              className="inline-flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-slate-400 hover:bg-white/5 hover:text-white"
             >
-              Aprobar
+              <FileText size={12} /> {open ? 'Ocultar' : 'Borrador'}
             </button>
-            <button
-              onClick={() => reject(o.id)}
-              className="rounded-md px-2.5 py-1 text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10"
-            >
-              Rechazar
-            </button>
-          </>
-        )}
-        <span className="hidden text-[11px] text-slate-500 sm:inline">{timeAgo(o.updatedAt)}</span>
-        <StatusChip status={o.status} />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {waiting && (
+            <>
+              <button onClick={() => approve(o.id)} className="btn btn-approve btn-sm">
+                <Check size={13} strokeWidth={2.6} /> Aprobar
+              </button>
+              <button onClick={() => reject(o.id)} className="btn btn-ghost-danger btn-sm">
+                <X size={13} strokeWidth={2.6} /> Rechazar
+              </button>
+            </>
+          )}
+          <span className="hidden w-16 text-right text-[11px] tabular-nums text-slate-500 md:inline">{timeAgo(o.updatedAt)}</span>
+          <StatusChip status={o.status} className="w-[150px] justify-start" />
+        </div>
       </div>
-      {open && hasDraft && (
-        <div className="mt-2">
+      {open && o.draft && (
+        <div className="px-3 pb-3">
           <DraftCard order={o} />
         </div>
       )}
     </li>
+  )
+}
+
+function Count({ n, label, cls }: { n: number; label: string; cls: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-500">
+      <span className={cx('h-1.5 w-1.5 rounded-full', cls)} />
+      <span className="tabular-nums text-slate-300">{n}</span> {label}
+    </span>
   )
 }
 
@@ -83,18 +91,20 @@ export function OrderQueue() {
   }, [orders])
 
   return (
-    <section className="border-t border-white/5 bg-hq-panel/85 backdrop-blur">
-      <button onClick={() => setCollapsed(!collapsed)} className="flex w-full items-center gap-3 px-5 py-2 text-left">
-        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Órdenes</span>
-        <span className="text-xs text-slate-500">
-          {counts.running} en curso · {counts.pending} pendientes
-          {counts.approval > 0 && <span className="text-amber-300"> · {counts.approval} necesitan tu aprobación</span>}
+    <section className="border-t border-white/[0.06] bg-hq-panel/90 backdrop-blur-xl">
+      <button onClick={() => setCollapsed(!collapsed)} className="flex h-10 w-full items-center gap-5 px-5 text-left">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-300">Cola de órdenes</span>
+        <Count n={counts.running} label="en curso" cls="bg-sky-400" />
+        <Count n={counts.pending} label="pendientes" cls="bg-slate-400" />
+        <Count n={counts.approval} label="por aprobar" cls={counts.approval ? 'bg-amber-400 animate-pulse' : 'bg-amber-400/40'} />
+        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300">
+          {collapsed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {collapsed ? 'Mostrar' : 'Ocultar'}
         </span>
-        <span className="ml-auto text-xs text-slate-500">{collapsed ? '▲ mostrar' : '▼ ocultar'}</span>
       </button>
       {!collapsed && (
         <ul className="max-h-[24vh] space-y-0.5 overflow-y-auto px-2 pb-2">
-          {list.length === 0 && <li className="px-3 py-2 text-sm text-slate-500">Sin órdenes todavía. Escribe algo abajo.</li>}
+          {list.length === 0 && <li className="px-3 py-3 text-[13px] text-slate-500">Sin órdenes todavía. Escribe abajo lo que necesitas.</li>}
           {list.map((o) => (
             <Row key={o.id} o={o} />
           ))}
