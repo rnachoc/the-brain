@@ -3,17 +3,18 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
-import type { Order, Run } from '../../../shared/types'
+import type { Order, Project, Run } from '../../../shared/types'
+import { getNote } from '../brain'
 import { hq, waitForApproval } from '../hq'
 import { repo } from '../db'
 
-export const HQ_TOOLS = ['mcp__hq__plan_orders', 'mcp__hq__update_order', 'mcp__hq__request_approval']
+export const HQ_TOOLS = ['mcp__hq__plan_orders', 'mcp__hq__update_order', 'mcp__hq__request_approval', 'mcp__hq__brain_write']
 
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] })
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-export function hqServer(run: Run, cwd: string) {
+export function hqServer(project: Project, run: Run, cwd: string) {
   const byNumber = (n: number): Order | undefined => repo.ordersOfRun(run.id).find((o) => o.seq === n - 1)
 
   const planOrders = tool(
@@ -77,6 +78,7 @@ export function hqServer(run: Run, cwd: string) {
       hq.log(run.projectId, run.id, 'approval', `⏸ Esperando tu aprobación: ${o.title}`, JSON.stringify(draft))
 
       const ok = await waitForApproval(o.id)
+      if (repo.getRun(run.id)?.status === 'failed') return text('El usuario ha cancelado esta tarea. Detente.')
       hq.patchOrder(o.id, { status: ok ? 'done' : 'rejected' })
       hq.patchRun(run.id, { status: 'running' })
       hq.log(
@@ -93,10 +95,28 @@ export function hqServer(run: Run, cwd: string) {
     },
   )
 
+  const brainWrite = tool(
+    'brain_write',
+    'Guarda en The Brain (memoria compartida de todos los agentes) lo que hayas aprendido y deba recordarse: decisiones, datos estables, preferencias del usuario. mode "append" añade al final de la nota (lo normal); "replace" la reescribe entera (se guarda copia de la versión anterior). Nunca borres información útil. Usa rutas como "proyectos/<id>.md", "decisiones.md" o "perfil.md".',
+    {
+      path: z.string().describe('Ruta dentro de brain/, terminada en .md'),
+      content: z.string(),
+      mode: z.enum(['append', 'replace']).default('append'),
+    },
+    async ({ path, content, mode }) => {
+      const current = getNote(path)
+      const next = mode === 'append' && current ? `${current.content.trimEnd()}\n\n${content.trim()}\n` : `${content.trim()}\n`
+      const note = hq.saveNote(path, next, project.name)
+      if (!note) return text('Ruta no válida: usa una ruta .md dentro de brain/ (por ejemplo proyectos/mi-proyecto.md).')
+      hq.log(run.projectId, run.id, 'info', `🧠 Brain actualizado: ${note.path} (${mode === 'append' && current ? 'añadido' : current ? 'reescrito' : 'nueva nota'})`, content)
+      return text(`Guardado en brain/${note.path}.`)
+    },
+  )
+
   return createSdkMcpServer({
     name: 'hq',
     version: '0.1.0',
-    tools: [planOrders, updateOrder, requestApproval],
+    tools: [planOrders, updateOrder, requestApproval, brainWrite],
     // request_approval espera al usuario: le damos margen de sobra.
     timeout: DAY_MS,
   })

@@ -2,6 +2,7 @@
 import { mkdirSync } from 'node:fs'
 import { query } from '@anthropic-ai/claude-agent-sdk'
 import type { Project, Run } from '../../../shared/types'
+import { brainContext } from '../brain'
 import { agentEnv, BRAIN_DIR, loadConfig, projectFolder } from '../config'
 import { repo } from '../db'
 import { hq } from '../hq'
@@ -10,7 +11,7 @@ import { HQ_TOOLS, hqServer } from './tools'
 
 const MAX_TURNS = 40
 
-function protocol(cwd: string): string {
+function protocol(cwd: string, brain: string): string {
   return `
 
 ## Cómo trabajas dentro de The Brain
@@ -18,8 +19,11 @@ function protocol(cwd: string): string {
 - Al empezar cada orden llamas a update_order con "running"; al terminarla, con "done" (o "failed" con una nota breve).
 - Nunca envías mensajes, emails, publicaciones ni pagos, ni contactas a nadie. Para todo lo externo preparas el borrador completo y llamas a request_approval: el usuario lo aprueba o lo rechaza y, si lo aprueba, lo envía él.
 - Tu carpeta de trabajo es ${cwd}. Guarda ahí lo que produzcas. No borres archivos.
-- La memoria compartida está en ${BRAIN_DIR}. Si existe, léela al empezar (index.md y lo que sea de tu proyecto).
-- Termina con un resumen breve de lo que has hecho, en el idioma del usuario.`
+- The Brain (${BRAIN_DIR}) es la memoria compartida de todos los agentes. Abajo tienes lo esencial. Cuando aprendas algo que deba recordarse (decisiones, datos estables, preferencias del usuario), guárdalo con brain_write. No escribas en brain/ con otras herramientas.
+- Termina con un resumen breve de lo que has hecho, en el idioma del usuario.
+
+## Lo que ya sabe The Brain
+${brain}`
 }
 
 const summarize = (input: Record<string, unknown>): string => {
@@ -28,7 +32,7 @@ const summarize = (input: Record<string, unknown>): string => {
   return v.length > 120 ? v.slice(0, 119) + '…' : v
 }
 
-export async function runClaude(project: Project, run: Run): Promise<void> {
+export async function runClaude(project: Project, run: Run, abort: AbortController): Promise<void> {
   const { defaults } = loadConfig()
   const cwd = projectFolder(project)
   mkdirSync(BRAIN_DIR, { recursive: true })
@@ -43,11 +47,12 @@ export async function runClaude(project: Project, run: Run): Promise<void> {
     options: {
       model,
       cwd,
-      systemPrompt: project.systemPrompt + protocol(cwd),
+      systemPrompt: project.systemPrompt + protocol(cwd, brainContext(project)),
+      abortController: abort,
       tools: project.tools,
       allowedTools: HQ_TOOLS,
       disallowedTools: DISALLOWED_PATTERNS,
-      mcpServers: { hq: hqServer(run, cwd) },
+      mcpServers: { hq: hqServer(project, run, cwd) },
       canUseTool: makeGuard(project, cwd, [BRAIN_DIR], (tool, reason, input) =>
         log('warn', `⛔ ${tool} bloqueada: ${reason}`, JSON.stringify(input)),
       ),
