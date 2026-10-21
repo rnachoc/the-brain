@@ -4,6 +4,7 @@ import { agentStatus, lastAction, useStore } from '../store'
 import type { AgentStatus, Project } from '../types'
 import { AGENT_META, cx } from '../util'
 import { box, iso, poly, ROOM_D, ROOM_W, roomOrigin, WALL_H } from './iso'
+import type { Rect } from './labels'
 
 interface Props {
   project: Project
@@ -326,12 +327,11 @@ export function IsoRoom({ project: p, gx, gy }: Props) {
 }
 
 /** Nombre de la sala y burbuja con la última acción (se pinta encima de todo). */
-export function RoomOverlay({ project: p, gx, gy }: Props) {
+export function RoomOverlay({ project: p, gx, gy, label }: Props & { label: Rect }) {
   const status = useStore((s) => agentStatus(s, p.id))
   const last = useStore((s) => lastAction(s, p.id))
   const select = useStore((s) => s.selectProject)
   const [x0, y0] = roomOrigin(gx, gy)
-  const [fx, fy] = iso(x0 + W, y0 + D, -0.7)
   // La burbuja va sobre la zona libre del suelo, delante, para no tapar la cama ni la mesa.
   const [bx, by] = iso(x0 + 6.4, y0 + 6.6, 0)
   const meta = AGENT_META[status]
@@ -350,7 +350,8 @@ export function RoomOverlay({ project: p, gx, gy }: Props) {
           </div>
         </foreignObject>
       )}
-      <foreignObject x={fx - 130} y={fy + 6} width={260} height={46}>
+      {/* Posición calculada en labels.ts para no pisar salas ni otras etiquetas. */}
+      <foreignObject x={label.x} y={label.y} width={label.w} height={label.h}>
         <div className="flex justify-center">
           <button
             onClick={() => select(p.id)}

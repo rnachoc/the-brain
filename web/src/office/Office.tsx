@@ -2,7 +2,8 @@ import { useMemo } from 'react'
 import { agentStatus, useStore } from '../store'
 import type { Project } from '../types'
 import { AGENT_META, cx } from '../util'
-import { box, iso, PITCH, ROOM_D, ROOM_W, roomOrigin, slotFor, WALL_H } from './iso'
+import { box, iso, PITCH, slotFor } from './iso'
+import { placeLabels, roomHull } from './labels'
 import { IsoRoom, RoomOverlay } from './IsoRoom'
 
 interface Placed {
@@ -88,26 +89,24 @@ export function Office() {
     [projects],
   )
 
+  const labels = useMemo(() => placeLabels(placed), [placed])
+
   const viewBox = useMemo(() => {
-    let minX = -80, maxX = 80, minY = -120, maxY = 80
-    for (const { gx, gy } of placed) {
-      const [x0, y0] = roomOrigin(gx, gy)
-      const pts = [
-        iso(x0, y0 + ROOM_D, 0),
-        iso(x0 + ROOM_W, y0, 0),
-        iso(x0, y0, WALL_H + 1),
-        iso(x0 + ROOM_W, y0 + ROOM_D, -0.7),
-      ]
-      for (const [x, y] of pts) {
-        minX = Math.min(minX, x)
-        maxX = Math.max(maxX, x)
-        minY = Math.min(minY, y)
-        maxY = Math.max(maxY, y + 56)
-      }
+    let minX = -100, maxX = 100, minY = -120, maxY = 80
+    const add = (x: number, y: number) => {
+      minX = Math.min(minX, x)
+      maxX = Math.max(maxX, x)
+      minY = Math.min(minY, y)
+      maxY = Math.max(maxY, y)
     }
-    const pad = 24
+    for (const { gx, gy } of placed) for (const [x, y] of roomHull(gx, gy)) add(x, y)
+    for (const r of labels.values()) {
+      add(r.x, r.y)
+      add(r.x + r.w, r.y + r.h)
+    }
+    const pad = 20
     return `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`
-  }, [placed])
+  }, [placed, labels])
 
   // Pintamos de atrás hacia delante (gx + gy) para que el solapamiento sea correcto.
   const items = useMemo(
@@ -147,7 +146,7 @@ export function Office() {
         <g>{placed.map((x) => <Link key={x.p.id} {...x} />)}</g>
         {items.map((i) => i.node)}
         {placed.map((x) => (
-          <RoomOverlay key={x.p.id} project={x.p} gx={x.gx} gy={x.gy} />
+          <RoomOverlay key={x.p.id} project={x.p} gx={x.gx} gy={x.gy} label={labels.get(x.p.id)!} />
         ))}
       </svg>
       <div className="pointer-events-none absolute bottom-3 left-4 flex gap-4 text-[11px] text-slate-500">
