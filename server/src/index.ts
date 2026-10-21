@@ -12,6 +12,10 @@ const { repo } = await import('./db')
 const { bus, hq, resolveApproval } = await import('./hq')
 const { answerQuestion, cancelRun, handleChat } = await import('./orchestrator')
 const { ensureBrain, listNotes } = await import('./brain')
+const { runSchedule, startScheduler } = await import('./scheduler')
+const { isValidRule } = await import('../../shared/schedule')
+type Schedule = import('../../shared/types').Schedule
+const { uid } = await import('./hq')
 
 // Variable propia: PORT la suelen fijar otras herramientas para el servidor web.
 const PORT = Number(process.env.SERVER_PORT ?? 8787)
@@ -50,6 +54,52 @@ app.post<{ Params: { id: string } }>('/api/runs/:id/cancel', async (req, reply) 
 
 app.get('/api/brain', async () => listNotes())
 
+// ---------- Tareas programadas ----------
+
+type ScheduleBody = Partial<Pick<Schedule, 'projectId' | 'title' | 'prompt' | 'rule' | 'enabled'>>
+
+function validSchedule(b: ScheduleBody | undefined): string | null {
+  if (!b?.projectId || !loadConfig().projects.some((p) => p.id === b.projectId)) return 'Proyecto no válido'
+  if (!b.title?.trim() || !b.prompt?.trim()) return 'Faltan título u orden'
+  if (!isValidRule(b.rule)) return 'Regla de programación no válida'
+  return null
+}
+
+app.post<{ Body: ScheduleBody }>('/api/schedules', async (req, reply) => {
+  const err = validSchedule(req.body)
+  if (err) return reply.code(400).send({ error: err })
+  const b = req.body as Required<ScheduleBody>
+  const s: Schedule = { id: uid(), projectId: b.projectId, title: b.title.trim(), prompt: b.prompt.trim(), rule: b.rule, enabled: b.enabled ?? true, createdAt: Date.now() }
+  hq.saveSchedule(s)
+  return s
+})
+
+app.patch<{ Params: { id: string }; Body: ScheduleBody }>('/api/schedules/:id', async (req, reply) => {
+  const cur = repo.getSchedule(req.params.id)
+  if (!cur) return reply.code(404).send({ error: 'No existe' })
+  const next = { ...cur, ...req.body, id: cur.id }
+  const err = validSchedule(next)
+  if (err) return reply.code(400).send({ error: err })
+  hq.saveSchedule(next)
+  return next
+})
+
+app.delete<{ Params: { id: string } }>('/api/schedules/:id', async (req) => {
+  hq.removeSchedule(req.params.id)
+  return { ok: true }
+})
+
+app.post<{ Params: { id: string } }>('/api/schedules/:id/run', async (req, reply) => {
+  const s = repo.getSchedule(req.params.id)
+  if (!s) return reply.code(404).send({ error: 'No existe' })
+  return { ok: runSchedule(s, 'manual') }
+})
+
+app.post<{ Body: { paused?: boolean } }>('/api/schedules/pause', async (req) => {
+  hq.setSchedulesPaused(!!req.body?.paused)
+  return { paused: hq.schedulesPaused() }
+})
+
 app.put<{ Body: { path?: string; content?: string } }>('/api/brain', async (req, reply) => {
   const { path, content } = req.body ?? {}
   if (typeof path !== 'string' || typeof content !== 'string') return reply.code(400).send({ error: 'Faltan path o content' })
@@ -66,6 +116,7 @@ app.get('/ws', { websocket: true }, (socket) => {
 
 const interrupted = repo.failInterrupted()
 ensureBrain(loadConfig().projects)
+startScheduler()
 await app.listen({ port: PORT, host: '127.0.0.1' })
 
 const { projects } = loadConfig()

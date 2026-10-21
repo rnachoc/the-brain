@@ -11,7 +11,7 @@ const VIA: Record<string, string> = { mention: '@mención', model: 'router', key
 
 const running = new Map<string, AbortController>()
 
-function startRun(project: Project, prompt: string) {
+export function startRun(project: Project, prompt: string) {
   // Con Claude conectado todos los agentes son reales, salvo los marcados con live: false.
   const live = hasClaude() && project.live !== false
   const run = hq.createRun(project.id, prompt, live)

@@ -2,7 +2,7 @@
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite'
-import type { Draft, LogEntry, LogLevel, Order, Run } from '../../shared/types'
+import type { Draft, LogEntry, LogLevel, Order, Run, Schedule, ScheduleRule } from '../../shared/types'
 import { DATA_DIR } from './config'
 
 mkdirSync(DATA_DIR, { recursive: true })
@@ -26,6 +26,11 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT NOT NULL, run_id TEXT,
     ts INTEGER NOT NULL, level TEXT NOT NULL, text TEXT NOT NULL, detail TEXT
   );
+  CREATE TABLE IF NOT EXISTS schedules (
+    id TEXT PRIMARY KEY, project_id TEXT NOT NULL, title TEXT NOT NULL, prompt TEXT NOT NULL,
+    rule TEXT NOT NULL, enabled INTEGER NOT NULL, last_run_at INTEGER, created_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
   CREATE INDEX IF NOT EXISTS orders_run ON orders(run_id);
   CREATE INDEX IF NOT EXISTS logs_project ON logs(project_id);
 `)
@@ -68,7 +73,42 @@ const toLog = (r: Row): LogEntry => ({
   detail: (r.detail as string) ?? undefined,
 })
 
+const toSchedule = (r: Row): Schedule => ({
+  id: r.id as string,
+  projectId: r.project_id as string,
+  title: r.title as string,
+  prompt: r.prompt as string,
+  rule: JSON.parse(r.rule as string) as ScheduleRule,
+  enabled: !!r.enabled,
+  lastRunAt: r.last_run_at == null ? undefined : Number(r.last_run_at),
+  createdAt: Number(r.created_at),
+})
+
 export const repo = {
+  listSchedules(): Schedule[] {
+    return (db.prepare('SELECT * FROM schedules ORDER BY created_at').all() as Row[]).map(toSchedule)
+  },
+  getSchedule(id: string): Schedule | undefined {
+    const r = db.prepare('SELECT * FROM schedules WHERE id = ?').get(id) as Row | undefined
+    return r && toSchedule(r)
+  },
+  upsertSchedule(s: Schedule) {
+    db.prepare(
+      'INSERT INTO schedules (id, project_id, title, prompt, rule, enabled, last_run_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ' +
+        'ON CONFLICT(id) DO UPDATE SET project_id = excluded.project_id, title = excluded.title, prompt = excluded.prompt, rule = excluded.rule, enabled = excluded.enabled, last_run_at = excluded.last_run_at',
+    ).run(s.id, s.projectId, s.title, s.prompt, JSON.stringify(s.rule), s.enabled ? 1 : 0, s.lastRunAt ?? null, s.createdAt ?? Date.now())
+  },
+  deleteSchedule(id: string) {
+    db.prepare('DELETE FROM schedules WHERE id = ?').run(id)
+  },
+  getSetting(key: string): string | undefined {
+    const r = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as Row | undefined
+    return r?.value as string | undefined
+  },
+  setSetting(key: string, value: string) {
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(key, value)
+  },
+
   insertMessage(id: string, text: string, ts: number) {
     db.prepare('INSERT INTO messages (id, text, ts) VALUES (?, ?, ?)').run(id, text, ts)
   },

@@ -1,7 +1,7 @@
 // Estado central: cada cambio se guarda en SQLite y se emite a los clientes por WebSocket.
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import type { LogLevel, Order, RouterQuestion, Run, ServerEvent, Snapshot } from '../../shared/types'
+import type { LogLevel, Order, RouterQuestion, Run, Schedule, ServerEvent, Snapshot } from '../../shared/types'
 import { listNotes, writeNote } from './brain'
 import { hasClaude } from './config'
 import { repo } from './db'
@@ -23,6 +23,8 @@ export const hq = {
       orders: repo.listOrders(runs.map((r) => r.id)),
       logs: repo.listLogs(),
       notes: listNotes(),
+      schedules: repo.listSchedules(),
+      schedulesPaused: hq.schedulesPaused(),
       question,
       live: hasClaude(),
     }
@@ -85,6 +87,20 @@ export const hq = {
     const note = writeNote(path, content, by)
     if (note) emit({ type: 'note', note })
     return note
+  },
+
+  saveSchedule(s: Schedule) {
+    repo.upsertSchedule(s)
+    emit({ type: 'schedule', schedule: repo.getSchedule(s.id)! })
+  },
+  removeSchedule(id: string) {
+    repo.deleteSchedule(id)
+    emit({ type: 'scheduleRemoved', id })
+  },
+  schedulesPaused: () => repo.getSetting('schedulesPaused') === 'true',
+  setSchedulesPaused(paused: boolean) {
+    repo.setSetting('schedulesPaused', String(paused))
+    emit({ type: 'schedulesPaused', paused })
   },
 
   routed(text: string, projectIds: string[]) {
