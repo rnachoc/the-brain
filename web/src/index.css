@@ -134,21 +134,30 @@ body {
   to { stroke-dashoffset: -20; }
 }
 
-.brain-pulse {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: brain 3.2s ease-in-out infinite;
-}
-.brain-pulse.brain-fast {
-  animation-duration: 1.4s;
-}
-@keyframes brain {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
 .spin-slow {
   animation: dash 3s linear infinite;
+}
+.core-float {
+  animation: core-float 4s ease-in-out infinite;
+}
+@keyframes core-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.holo-flicker {
+  animation: holo 3s steps(1) infinite;
+}
+@keyframes holo {
+  0%, 100% { opacity: 0.95; }
+  47% { opacity: 0.6; }
+  49% { opacity: 0.95; }
+}
+.core-pulse {
+  animation: core-pulse 2.4s ease-in-out infinite;
+}
+@keyframes core-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
 }
 
 .bubble {

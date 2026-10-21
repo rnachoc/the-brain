@@ -2,9 +2,10 @@ import { useMemo } from 'react'
 import { agentStatus, useStore } from '../store'
 import type { Project } from '../types'
 import { AGENT_META, cx } from '../util'
-import { box, iso, PITCH, slotFor } from './iso'
+import { iso, PITCH, slotFor } from './iso'
 import { placeLabels, roomHull } from './labels'
 import { IsoRoom, RoomOverlay } from './IsoRoom'
+import { HoloCore } from './HoloCore'
 
 interface Placed {
   p: Project
@@ -34,38 +35,13 @@ function BrainCore() {
   const setTab = useStore((s) => s.setTab)
   const notes = useStore((s) => s.notes.length)
   const anyActive = useStore((s) => s.runs.some((r) => r.status !== 'done' && r.status !== 'failed'))
-  const base = box(-3.5, -3.5, -0.7, 7, 7, 0.7)
   const [cx0, cy0] = iso(0, 0, 0)
   const [sx, sy] = iso(0, 0, 3.4)
-  const ring = (r: number) => ({ rx: r * Math.SQRT2 * Math.cos(Math.PI / 6) * 14, ry: r * Math.SQRT2 * 0.5 * 14 })
-  const r1 = ring(2.6)
-  const r2 = ring(3.3)
   const [lx, ly] = iso(3.5, 3.5, -0.7)
 
   return (
     <g className="cursor-pointer" onClick={() => setTab('brain')}>
-      <polygon points={base.left} fill="#0c1024" />
-      <polygon points={base.right} fill="#10152d" />
-      <polygon points={base.top} fill="url(#brainFloor)" stroke="#8b5cf6" strokeOpacity={0.5} />
-      <ellipse cx={cx0} cy={cy0} {...r2} fill="none" stroke="#22d3ee" strokeOpacity={0.35} strokeDasharray="2 6" className="spin-slow" />
-      <ellipse cx={cx0} cy={cy0} {...r1} fill="#8b5cf6" fillOpacity={0.12} stroke="#a78bfa" strokeOpacity={0.6} />
-      <line x1={cx0} y1={cy0} x2={sx} y2={sy} stroke="#a78bfa" strokeOpacity={0.5} strokeWidth={6} />
-      <ellipse cx={sx} cy={cy0} rx={14} ry={7} fill="#a78bfa" opacity={0.25} filter="url(#glow)" />
-      <g className={cx('brain-pulse', anyActive && 'brain-fast')}>
-        <circle cx={sx} cy={sy} r={34} fill="#7c3aed" opacity={0.18} filter="url(#glowBig)" />
-        <circle cx={sx} cy={sy} r={25} fill="url(#brainSphere)" />
-        <ellipse cx={sx} cy={sy} rx={25} ry={8} fill="none" stroke="#e9d5ff" strokeOpacity={0.25} />
-        <ellipse cx={sx} cy={sy} rx={9} ry={25} fill="none" stroke="#e9d5ff" strokeOpacity={0.2} />
-        <ellipse cx={sx} cy={sy} rx={18} ry={25} fill="none" stroke="#e9d5ff" strokeOpacity={0.12} />
-        <circle cx={sx - 8} cy={sy - 9} r={6} fill="#fff" opacity={0.25} />
-      </g>
-      <circle r={2.5} fill="#22d3ee" filter="url(#glow)">
-        <animateMotion
-          dur="7s"
-          repeatCount="indefinite"
-          path={`M ${sx - 40} ${sy} a 40 13 0 1 0 80 0 a 40 13 0 1 0 -80 0`}
-        />
-      </circle>
+      <HoloCore sx={sx} sy={sy} cx0={cx0} cy0={cy0} active={anyActive} />
       <foreignObject x={lx - 80} y={ly + 4} width={160} height={40}>
         <div className="flex flex-col items-center">
           <div className="rounded-md border border-violet-400/40 bg-violet-950/70 px-2.5 py-1 font-pixel text-[13px] tracking-[0.16em] text-violet-100 backdrop-blur">
@@ -132,15 +108,9 @@ export function Office() {
           <filter id="glowBig" x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="12" />
           </filter>
-          <radialGradient id="brainSphere" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#f5d0fe" />
-            <stop offset="35%" stopColor="#a78bfa" />
-            <stop offset="75%" stopColor="#6d28d9" />
-            <stop offset="100%" stopColor="#1e1b4b" />
-          </radialGradient>
-          <linearGradient id="brainFloor" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#1e1b4b" />
-            <stop offset="100%" stopColor="#0c1a2e" />
+          <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
+            <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
           </linearGradient>
         </defs>
         <g>{placed.map((x) => <Link key={x.p.id} {...x} />)}</g>
