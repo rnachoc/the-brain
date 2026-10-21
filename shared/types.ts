@@ -81,6 +81,8 @@ export interface Schedule {
   prompt: string
   rule: ScheduleRule
   enabled: boolean
+  lastRunAt?: number
+  createdAt?: number
 }
 
 export interface BrainNote {
@@ -111,6 +113,9 @@ export interface Snapshot {
   orders: Order[]
   logs: LogEntry[]
   notes: BrainNote[]
+  schedules: Schedule[]
+  /** Interruptor general: con true no se lanza ninguna tarea programada. */
+  schedulesPaused: boolean
   question: RouterQuestion | null
   /** Hay API key: el router y los agentes live usan Claude. */
   live: boolean
@@ -124,3 +129,6 @@ export type ServerEvent =
   | { type: 'question'; question: RouterQuestion | null }
   | { type: 'routed'; note: RouterNote }
   | { type: 'note'; note: BrainNote }
+  | { type: 'schedule'; schedule: Schedule }
+  | { type: 'scheduleRemoved'; id: string }
+  | { type: 'schedulesPaused'; paused: boolean }

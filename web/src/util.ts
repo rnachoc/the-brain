@@ -57,28 +57,4 @@ export function describeRule(rule: ScheduleRule): string {
   }
 }
 
-export function ruleMatchesDay(rule: ScheduleRule, day: Date): boolean {
-  switch (rule.type) {
-    case 'daily':
-      return true
-    case 'weekly':
-      return rule.weekdays.includes(day.getDay())
-    case 'once':
-      return new Date(rule.at).toDateString() === day.toDateString()
-  }
-}
-
-export function nextOccurrence(rule: ScheduleRule, from = new Date()): Date | null {
-  if (rule.type === 'once') {
-    const d = new Date(rule.at)
-    return d > from ? d : null
-  }
-  const [hh, mm] = rule.time.split(':').map(Number)
-  for (let i = 0; i < 8; i++) {
-    const d = new Date(from)
-    d.setDate(d.getDate() + i)
-    d.setHours(hh, mm, 0, 0)
-    if (d > from && ruleMatchesDay(rule, d)) return d
-  }
-  return null
-}
+export { nextOccurrence, ruleMatchesDay } from '../../shared/schedule'
