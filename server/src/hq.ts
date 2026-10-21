@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import type { LogLevel, Order, RouterQuestion, Run, ServerEvent, Snapshot } from '../../shared/types'
+import { listNotes, writeNote } from './brain'
 import { hasClaude } from './config'
 import { repo } from './db'
 
@@ -21,6 +22,7 @@ export const hq = {
       runs,
       orders: repo.listOrders(runs.map((r) => r.id)),
       logs: repo.listLogs(),
+      notes: listNotes(),
       question,
       live: hasClaude(),
     }
@@ -77,6 +79,13 @@ export const hq = {
     emit({ type: 'question', question: q })
   },
   getQuestion: () => question,
+
+  /** Guarda una nota del Brain (con copia previa) y avisa a los clientes. */
+  saveNote(path: string, content: string, by: string) {
+    const note = writeNote(path, content, by)
+    if (note) emit({ type: 'note', note })
+    return note
+  },
 
   routed(text: string, projectIds: string[]) {
     emit({ type: 'routed', note: { id: uid(), text, ts: Date.now(), projectIds } })

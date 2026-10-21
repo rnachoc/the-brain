@@ -19,7 +19,7 @@ export interface Project {
   systemPrompt: string
   model?: string
   fallback?: boolean
-  /** Fase b: solo los proyectos con live: true usan el agente real. */
+  /** Con Claude conectado todos los agentes son reales; live: false lo deja simulado. */
   live?: boolean
 }
 
@@ -110,6 +110,7 @@ export interface Snapshot {
   runs: Run[]
   orders: Order[]
   logs: LogEntry[]
+  notes: BrainNote[]
   question: RouterQuestion | null
   /** Hay API key: el router y los agentes live usan Claude. */
   live: boolean
@@ -122,3 +123,4 @@ export type ServerEvent =
   | { type: 'log'; log: LogEntry }
   | { type: 'question'; question: RouterQuestion | null }
   | { type: 'routed'; note: RouterNote }
+  | { type: 'note'; note: BrainNote }
