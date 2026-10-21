@@ -186,8 +186,10 @@ With an empty `.env` (or none at all), The Brain runs fully simulated. The route
 
 ### Tabs
 
-- **Tasks**: every order across projects, filterable by project and status, plus scheduled tasks.
+- **Tasks**: every order across projects, filterable by project and status, plus **scheduled tasks**: create one (project, title, order, and *every day*, *weekly* on chosen days, or *once*), switch it on/off, run it now (⚡) or delete it. A master switch pauses all of them.
 - **Calendar**: month view of scheduled tasks and past runs.
+
+Scheduled tasks run on the server as if you had typed the order yourself, so they **use your Claude plan** while the app is running. Nothing is scheduled by default, occurrences missed while the server was off are not replayed, and one-off tasks switch themselves off after running.
 - **Brain**: browse and edit the shared notes in `brain/`. Changes made by agents appear live, and each note shows who edited it last.
 
 On first start The Brain creates `brain/index.md`, `perfil.md`, `decisiones.md` and one `proyectos/<id>.md` per project. Fill in **perfil.md**: every agent reads it.
@@ -269,6 +271,7 @@ Your prompts and the files agents read are sent to Claude to do the work, as wit
 
 - **Subscription (Option A):** no per-request charge. Runs count toward your Pro/Max usage limits. The cost shown in the agent panel is an *estimate* of the equivalent API price.
 - **API key (Option B):** billed per token. Approximate prices: Claude Haiku 5.5 (router) $0.10 / $0.50, Claude Sonnet 5.5 (agents) $2 / $10, per million input / output tokens. A typical task (e.g. drafting a reply) usually costs a few cents. Each run's cost appears in the agent's history.
+- **Scheduled tasks** run unattended and count like any other run. Use the master switch in **Tasks → Programadas** to pause them all.
 - **Demo mode:** free.
 
 To reduce usage, switch `defaults.model` (or a single agent's `model`) to a smaller model, or keep agents simulated by removing `"live": true`.
@@ -281,7 +284,7 @@ config.example.json   example agents (copied to config.json on install)
 scripts/
   ensure-config.mjs   creates config.json on first run
   claude-login.mjs    npm run login → claude setup-token
-shared/types.ts       types shared by server and web
+shared/              types and schedule rules shared by server and web
 server/               Node + Fastify + WebSocket + SQLite
   src/index.ts        REST API and /ws event stream
   src/router.ts       @mentions, Claude router, keyword fallback
@@ -289,6 +292,7 @@ server/               Node + Fastify + WebSocket + SQLite
   src/hq.ts           state changes, events, approval waits
   src/brain.ts        Brain notes on disk, backups, agent context
   src/db.ts           SQLite persistence
+  src/scheduler.ts    runs scheduled tasks on time
   src/agents/
     claude.ts         real agent (Claude Agent SDK)
     tools.ts          MCP tools: plan_orders, update_order, request_approval, brain_write
@@ -333,6 +337,5 @@ web/                  React + Vite + Tailwind
 | a | Isometric UI with sample data | ✅ |
 | b | Server, chat, routing and a real agent | ✅ |
 | c | All agents live, persistent Brain (agents read and write `/brain`), cancel runs | ✅ |
-| d | Scheduled tasks and calendar backed by the server | ⏳ |
+| d | Scheduled tasks and calendar backed by the server | ✅ |
 
-Until phase d, scheduled tasks in the UI are sample data kept in the browser.
