@@ -10,7 +10,8 @@ loadEnv({ path: join(ROOT, '.env'), quiet: true })
 const { claudeAuth, loadConfig } = await import('./config')
 const { repo } = await import('./db')
 const { bus, hq, resolveApproval } = await import('./hq')
-const { answerQuestion, handleChat } = await import('./orchestrator')
+const { answerQuestion, cancelRun, handleChat } = await import('./orchestrator')
+const { ensureBrain, listNotes } = await import('./brain')
 
 // Variable propia: PORT la suelen fijar otras herramientas para el servidor web.
 const PORT = Number(process.env.SERVER_PORT ?? 8787)
@@ -43,6 +44,19 @@ app.post<{ Params: { id: string; action: 'approve' | 'reject' } }>('/api/orders/
   return { ok: true }
 })
 
+app.post<{ Params: { id: string } }>('/api/runs/:id/cancel', async (req, reply) =>
+  cancelRun(req.params.id) ? { ok: true } : reply.code(409).send({ error: 'Ese run no está en marcha' }),
+)
+
+app.get('/api/brain', async () => listNotes())
+
+app.put<{ Body: { path?: string; content?: string } }>('/api/brain', async (req, reply) => {
+  const { path, content } = req.body ?? {}
+  if (typeof path !== 'string' || typeof content !== 'string') return reply.code(400).send({ error: 'Faltan path o content' })
+  const note = hq.saveNote(path, content, 'tú')
+  return note ?? reply.code(400).send({ error: 'Ruta no válida: usa una ruta .md dentro de brain/' })
+})
+
 app.get('/ws', { websocket: true }, (socket) => {
   socket.send(JSON.stringify({ type: 'snapshot', state: hq.snapshot() }))
   const forward = (e: unknown) => socket.send(JSON.stringify(e))
@@ -51,15 +65,16 @@ app.get('/ws', { websocket: true }, (socket) => {
 })
 
 const interrupted = repo.failInterrupted()
+ensureBrain(loadConfig().projects)
 await app.listen({ port: PORT, host: '127.0.0.1' })
 
 const { projects } = loadConfig()
-const live = projects.filter((p) => p.live).map((p) => p.name)
+const live = projects.filter((p) => p.live !== false).map((p) => p.name)
 console.log(`\n  🧠 The Brain · servidor en http://localhost:${PORT}`)
 const auth = claudeAuth()
 console.log(
   auth
-    ? `  ✓ Claude conectado (${auth === 'subscription' ? 'tu suscripción' : 'API key'}) · agentes reales: ${live.join(', ') || 'ninguno (marca "live": true en config.json)'}`
+    ? `  ✓ Claude conectado (${auth === 'subscription' ? 'tu suscripción' : 'API key'}) · agentes reales: ${live.join(', ') || 'ninguno'}`
     : '  ⚠ Claude sin conectar · modo simulado. Ejecuta "npm run login" y pega el token en .env',
 )
 if (interrupted) console.log(`  ↺ ${interrupted} run(s) interrumpidos por un reinicio marcados como fallidos`)

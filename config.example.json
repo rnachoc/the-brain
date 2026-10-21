@@ -16,7 +16,6 @@
     {
       "id": "jobs",
       "name": "Búsqueda de empleo",
-      "live": true,
       "aliases": [
         "jobs",
         "empleo",

@@ -6,7 +6,7 @@ import { hq, waitForApproval } from '../hq'
 
 const EXTERNAL_RE = /(respond|contesta|envi|manda|publica|post|email|correo|mensaje|comunicado|tuit|paga|escribe a|dm\b)/i
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 const short = (s: string, n = 48) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 
@@ -42,8 +42,14 @@ function toolLines(p: Project, title: string): string[] {
   return Array.from({ length: Math.round(rand(2, 3.4)) }, () => pool[Math.floor(Math.random() * pool.length)])
 }
 
-export async function runSimulated(project: Project, run: Run): Promise<void> {
-  const log = (level: Parameters<typeof hq.log>[2], text: string) => hq.log(project.id, run.id, level, text)
+export async function runSimulated(project: Project, run: Run, abort: AbortController): Promise<void> {
+  const log = (level: Parameters<typeof hq.log>[2], text: string) => {
+    if (!abort.signal.aborted) hq.log(project.id, run.id, level, text)
+  }
+  const sleep = async (ms: number) => {
+    await wait(ms)
+    if (abort.signal.aborted) throw new Error('Cancelado')
+  }
   log('info', `Nueva petición (simulada): "${run.prompt}"`)
   const orders = hq.addOrders(run, plan(project, run.prompt))
   log('info', `Plan: ${orders.length} órdenes publicadas en la cola`)
@@ -65,6 +71,7 @@ export async function runSimulated(project: Project, run: Run): Promise<void> {
     hq.patchRun(run.id, { status: 'waiting' })
     log('approval', `⏸ Esperando tu aprobación: ${o.title}`)
     const ok = await waitForApproval(o.id)
+    if (abort.signal.aborted) throw new Error('Cancelado')
     hq.patchOrder(o.id, { status: ok ? 'done' : 'rejected' })
     hq.patchRun(run.id, { status: 'running' })
     log(ok ? 'info' : 'warn', ok ? '✓ Aprobado: el borrador queda listo para que lo envíes tú' : '✗ Rechazado: no se hace nada con el borrador')

@@ -4,24 +4,47 @@ import { runClaude } from './agents/claude'
 import { runSimulated } from './agents/simulated'
 import { hasClaude, loadConfig } from './config'
 import { repo } from './db'
-import { hq, uid } from './hq'
+import { hq, resolveApproval, uid } from './hq'
 import { route, type RouteDecision } from './router'
 
 const VIA: Record<string, string> = { mention: '@mención', model: 'router', keywords: 'palabras clave' }
 
+const running = new Map<string, AbortController>()
+
 function startRun(project: Project, prompt: string) {
-  const live = hasClaude() && !!project.live
+  // Con Claude conectado todos los agentes son reales, salvo los marcados con live: false.
+  const live = hasClaude() && project.live !== false
   const run = hq.createRun(project.id, prompt, live)
+  const abort = new AbortController()
+  running.set(run.id, abort)
   const runner = live ? runClaude : runSimulated
-  runner(project, run).catch((err: unknown) => {
-    // Si el agente ya cerró el run con su propio error, no lo registramos dos veces.
-    if (repo.getRun(run.id)?.status === 'failed') return
+  runner(project, run, abort)
+    .catch((err: unknown) => {
+      // Si el agente ya cerró el run (o lo cancelaste), no lo registramos dos veces.
+      if (repo.getRun(run.id)?.status === 'failed') return
     const msg = err instanceof Error ? err.message : String(err)
     for (const o of repo.ordersOfRun(run.id))
       if (o.status !== 'done' && o.status !== 'rejected') hq.patchOrder(o.id, { status: 'failed', note: msg })
     hq.patchRun(run.id, { status: 'failed', endedAt: Date.now(), result: msg })
     hq.log(project.id, run.id, 'error', `Error del agente: ${msg}`)
-  })
+    })
+    .finally(() => running.delete(run.id))
+}
+
+/** Detiene un run en marcha: se rechazan sus borradores pendientes y nada queda como hecho. */
+export function cancelRun(runId: string): boolean {
+  const run = repo.getRun(runId)
+  const abort = running.get(runId)
+  if (!run || !abort || (run.status !== 'running' && run.status !== 'waiting')) return false
+  hq.patchRun(runId, { status: 'failed', endedAt: Date.now(), result: 'Cancelado por ti' })
+  for (const o of repo.ordersOfRun(runId)) {
+    if (o.status === 'awaiting_approval') resolveApproval(o.id, false)
+    if (o.status === 'pending' || o.status === 'running' || o.status === 'awaiting_approval')
+      hq.patchOrder(o.id, { status: 'failed', note: 'Cancelado' })
+  }
+  abort.abort()
+  hq.log(run.projectId, runId, 'warn', '■ Run cancelado por ti')
+  return true
 }
 
 function dispatch(targets: { projectId: string; prompt: string }[], via: string) {
