@@ -23,7 +23,7 @@
         "linkedin"
       ],
       "color": "#38bdf8",
-      "icon": "💼",
+      "icon": "briefcase",
       "agents": 1,
       "folder": "workspaces/jobs",
       "description": "Respuestas a recruiters, CV adaptado a cada oferta y preparación de entrevistas.",
@@ -58,7 +58,7 @@
         "clientes"
       ],
       "color": "#34d399",
-      "icon": "🏪",
+      "icon": "store",
       "agents": 1,
       "folder": "workspaces/freelance",
       "description": "Prospección de clientes, propuestas, presupuestos y entregas.",
@@ -94,7 +94,7 @@
         "dev"
       ],
       "color": "#fb7185",
-      "icon": "🚀",
+      "icon": "rocket",
       "agents": 1,
       "folder": "workspaces/app",
       "description": "Desarrollo y planificación de un proyecto personal de software.",
@@ -130,7 +130,7 @@
         "contenido"
       ],
       "color": "#e879f9",
-      "icon": "📣",
+      "icon": "megaphone",
       "agents": 1,
       "folder": "workspaces/social",
       "description": "Ideas de contenido, calendario editorial y borradores para redes.",
@@ -165,7 +165,7 @@
         "general"
       ],
       "color": "#94a3b8",
-      "icon": "🧭",
+      "icon": "compass",
       "agents": 1,
       "folder": "workspaces/general",
       "description": "Agente de respaldo para todo lo que no encaja en otro proyecto.",
