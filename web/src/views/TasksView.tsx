@@ -1,16 +1,15 @@
 import { useMemo, useState } from 'react'
 import { ProjectTag, StatusChip } from '../components/bits'
+import { SchedulesPanel } from '../components/SchedulesPanel'
 import { useStore } from '../store'
 import type { OrderStatus } from '../types'
-import { cx, describeRule, fmtDateTime, nextOccurrence, ORDER_META, timeAgo } from '../util'
+import { cx, ORDER_META, timeAgo } from '../util'
 
 export function TasksView() {
   const orders = useStore((s) => s.orders)
   const runs = useStore((s) => s.runs)
   const projects = useStore((s) => s.projects)
-  const schedules = useStore((s) => s.schedules)
   const select = useStore((s) => s.selectProject)
-  const toggle = useStore((s) => s.toggleSchedule)
   const [project, setProject] = useState<string>('all')
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
 
@@ -83,34 +82,7 @@ export function TasksView() {
         </div>
       </section>
 
-      <aside>
-        <h2 className="mb-4 text-lg font-semibold text-white">Programadas</h2>
-        <ul className="space-y-2">
-          {schedules.map((s) => {
-            const next = s.enabled ? nextOccurrence(s.rule) : null
-            return (
-              <li key={s.id} className={cx('rounded-xl border border-white/5 bg-hq-panel/70 p-3', !s.enabled && 'opacity-50')}>
-                <div className="flex items-center gap-2">
-                  <ProjectTag id={s.projectId} onClick={() => select(s.projectId)} />
-                  <button
-                    onClick={() => toggle(s.id)}
-                    className={cx('relative ml-auto h-5 w-9 rounded-full transition', s.enabled ? 'bg-emerald-500/70' : 'bg-white/10')}
-                    aria-label={s.enabled ? 'Desactivar' : 'Activar'}
-                  >
-                    <span className={cx('absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all', s.enabled ? 'left-[18px]' : 'left-0.5')} />
-                  </button>
-                </div>
-                <div className="mt-2 text-sm font-medium text-slate-100">{s.title}</div>
-                <div className="text-xs text-slate-400">{s.prompt}</div>
-                <div className="mt-2 flex justify-between text-[11px] text-slate-500">
-                  <span>{describeRule(s.rule)}</span>
-                  {next && <span>próxima: {fmtDateTime(next.getTime())}</span>}
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      </aside>
+      <SchedulesPanel />
     </div>
   )
 }

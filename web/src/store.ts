@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { projects } from './config'
-import { seed } from './mock/seed'
 import type {
   AgentStatus,
   BrainNote,
@@ -40,7 +39,12 @@ export interface State {
   reject: (orderId: string) => void
   saveNote: (path: string, content: string) => Promise<boolean>
   cancelRun: (runId: string) => void
+  schedulesPaused: boolean
+  createSchedule: (s: Pick<Schedule, 'projectId' | 'title' | 'prompt' | 'rule'>) => Promise<string | null>
   toggleSchedule: (id: string) => void
+  deleteSchedule: (id: string) => void
+  runScheduleNow: (id: string) => void
+  setSchedulesPaused: (paused: boolean) => void
 }
 
 const post = (url: string, body?: unknown) =>
@@ -64,7 +68,8 @@ export const useStore = create<State>()((set) => ({
   orders: [],
   logs: [],
   notes: [],
-  ...seed(),
+  schedules: [],
+  schedulesPaused: false,
   question: null,
   routerNote: null,
   connected: false,
@@ -92,8 +97,22 @@ export const useStore = create<State>()((set) => ({
       body: JSON.stringify({ path, content }),
     }).then((r) => r.ok),
   cancelRun: (id) => void post(`/api/runs/${id}/cancel`),
-  toggleSchedule: (id) =>
-    set((s) => ({ schedules: s.schedules.map((x) => (x.id === id ? { ...x, enabled: !x.enabled } : x)) })),
+  createSchedule: (body) =>
+    fetch('/api/schedules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(
+      async (r) => (r.ok ? null : ((await r.json()) as { error: string }).error),
+    ),
+  toggleSchedule: (id) => {
+    const cur = useStore.getState().schedules.find((x) => x.id === id)
+    if (cur)
+      void fetch(`/api/schedules/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: !cur.enabled }),
+      })
+  },
+  deleteSchedule: (id) => void fetch(`/api/schedules/${id}`, { method: 'DELETE' }),
+  runScheduleNow: (id) => void post(`/api/schedules/${id}/run`),
+  setSchedulesPaused: (paused) => void post('/api/schedules/pause', { paused }),
 }))
 
 // ---------- Tiempo real ----------
@@ -113,6 +132,12 @@ function apply(e: ServerEvent) {
         return { question: e.question }
       case 'routed':
         return { routerNote: e.note }
+      case 'schedule':
+        return { schedules: upsert(s.schedules, e.schedule) }
+      case 'scheduleRemoved':
+        return { schedules: s.schedules.filter((x) => x.id !== e.id) }
+      case 'schedulesPaused':
+        return { schedulesPaused: e.paused }
       case 'note': {
         const others = s.notes.filter((n) => n.path !== e.note.path)
         return { notes: [...others, e.note].sort((a, b) => a.path.localeCompare(b.path)) }
