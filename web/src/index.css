@@ -200,6 +200,23 @@ body {
   to { transform: none; opacity: 1; }
 }
 
+/* Botones */
+.btn {
+  @apply inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition-colors;
+}
+.btn-sm {
+  @apply h-7 px-2.5 text-[11px];
+}
+.btn-approve {
+  @apply bg-emerald-500 text-emerald-950 shadow-sm shadow-emerald-500/20 hover:bg-emerald-400;
+}
+.btn-ghost-danger {
+  @apply text-rose-300 ring-1 ring-inset ring-rose-400/25 hover:bg-rose-500/10;
+}
+.btn-ghost {
+  @apply bg-white/[0.04] text-slate-300 ring-1 ring-inset ring-white/[0.08] hover:bg-white/[0.08] hover:text-white;
+}
+
 .hq-select {
   @apply rounded-md bg-white/5 px-2.5 py-1.5 text-sm text-slate-200 ring-1 ring-white/10 focus:outline-none focus:ring-violet-400/50;
 }
