@@ -2,7 +2,7 @@
 
 **A local, visual control room for your AI agents — one agent per project.**
 
-The Brain shows each of your projects as a room in an isometric office, arranged around a central core called **The Brain** (the shared memory). You type what you need in a single chat bar; a router sends it to the right project agent, the agent breaks it into concrete orders you can watch in a queue, and anything that would touch the outside world (a message, an email, a post, a payment) **waits for your approval** as a draft.
+The Brain shows your agents as employees in a 3D office building: every project is a block character at a desk, projects are grouped by department on their own floor, and the shared memory (**The Brain**) lives in the tower on the roof. You type what you need in a single chat bar; a router sends it to the right project agent, the agent breaks it into concrete orders you can watch in a queue, and anything that would touch the outside world (a message, an email, a post, a payment) **waits for your approval** as a draft.
 
 It runs entirely on your machine. Agents are powered by the [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk) and can use either **your Claude subscription (Pro/Max)** or **a pay-as-you-go API key**. With neither, everything still works in a **simulated demo mode**.
 
@@ -34,11 +34,15 @@ It runs entirely on your machine. Agents are powered by the [Claude Agent SDK](h
 
 ## Features
 
-- **Isometric office** — one room per project around The Brain, each with its own accent color, icon, desks for its agents, a status lamp (`idle` / `running` / `waiting`) and a speech bubble with the agent's last action. Links to The Brain light up while an agent works.
+- **3D office** — a cut-away building drawn in code with Three.js (no downloaded models or textures). Each department gets a floor wing; each project is an employee with a stable look. Employees sit and type with a "…" bubble while they work, stand and wave with an amber "!" when they need your decision, and relax when free. A chief of staff in the atrium turns to whoever the router just handed work to.
+- **Decide without leaving the scene** — click an employee to fly to them and open their card: what they're doing, the draft waiting for you with **Approve** / **Reject**, recent activity, the next scheduled run, a box to give them a direct order and a link to their Claude project. Filters (working / waiting for you / free) dim everyone else and step through the matching employees.
+- **Approved actions** — a project can declare fixed commands in `config.json` (for example "publish today's video"). They run on the server, never by an agent, and only after you approve them.
+- **Project signals** — a project can drop a small `.brain/status.json` (headline, a few numbers, a report and an image) that shows on its card, on the wall screen of its room and in the Automations tab.
+- **Automations tab** — The Brain's scheduled tasks grouped by department with their last result, plus a read-only list of Claude Desktop scheduled tasks.
 - **One chat bar for everything** — mention a project with `@alias` or just write; a fast model routes the message. If it affects several projects, each agent gets its own part, and they run **in parallel**. If the router isn't sure, it asks you in one line before starting anything.
 - **Visible orders** — every agent publishes a plan of 2–6 concrete orders to a queue and marks each one as it progresses: *pending → in progress → done*, or *needs your approval*.
 - **Human approval for anything external** — agents never send, publish or pay. They prepare the full draft and pause until you click **Approve** or **Reject**. Approving only marks the draft as ready for *you* to send.
-- **Agent side panel** — click a room to see that agent's orders (with drafts), a live log of every tool it uses, its run history with results and cost, and its system prompt.
+- **Agent side panel** — open **Ver detalle** on an employee's card to see that agent's orders (with drafts), a live log of every tool it uses, its run history with results and cost, and its system prompt.
 - **Full audit log** — every message, run, order and tool call is stored in a local SQLite database, including actions that were blocked.
 - **A shared, persistent memory** — The Brain is a folder of markdown notes on your disk. Every agent gets the essentials when it starts and saves what it learns with `brain_write` (append or edit, never delete, with a backup of every previous version).
 - **Tasks, Calendar and Brain tabs** — all orders with filters, scheduled tasks on a calendar, and a markdown explorer/editor for the shared notes.
@@ -48,7 +52,7 @@ It runs entirely on your machine. Agents are powered by the [Claude Agent SDK](h
 
 ```
  ┌──────────────── Browser (React + Vite) ────────────────┐
- │  Office · Tasks · Calendar · Brain   ·   Chat bar       │
+ │  Office · Tasks · Automations · Calendar · Brain        │
  │  Order queue  ·  Approve / Reject  ·  Agent panel       │
  └───────────────▲────────────────────────┬───────────────┘
                  │ WebSocket (live events) │ REST (chat, approvals)
@@ -160,9 +164,13 @@ With an empty `.env` (or none at all), The Brain runs fully simulated. The route
 
 ### Office
 
-- Each **room** is a project. The lamp and the agent's animation show the status: grey `idle`, green `running`, amber `waiting` (needs your approval, with a "!" over the agent).
-- The **bubble** shows the agent's latest action.
-- **Click a room** (or its label) to open the agent panel. Click **The Brain** to open the Brain tab.
+- The headline shows how many employees you have. Drag to orbit (within limits), scroll to zoom.
+- **Click a floor** to fly to that room; its wall screen shows the project signal or the department's order counts. **Esc** or the back arrow returns to the overview.
+- **Click an employee** (or their floating label) to fly to them and open their card. **Ver detalle** opens the full agent panel; **Abrir en Claude** opens the project's `claudeUrl`.
+- The **por aprobar** counter in the top bar jumps to the next employee waiting for you.
+- When the router isn't sure where a request goes, the chief of staff asks at the bottom of the scene with one button per employee.
+- Click the **tower** to open the Brain tab.
+- Without WebGL the office falls back to a plain list of employees with the same card and actions.
 
 ### Chat bar
 
@@ -173,7 +181,7 @@ With an empty `.env` (or none at all), The Brain runs fully simulated. The route
 
 ### Order queue
 
-- Sits above the chat and is always visible. Orders needing approval are listed first.
+- Sits above the chat. It starts folded in the Office to leave room for the scene; click it to expand. Orders needing approval are listed first.
 - **Approve / Reject** buttons appear inline. Use **ver borrador** to expand the draft.
 - Approving never sends anything: the draft is marked ready, and you can copy it from the agent panel. A copy is also saved in the agent's folder.
 
@@ -186,7 +194,8 @@ With an empty `.env` (or none at all), The Brain runs fully simulated. The route
 
 ### Tabs
 
-- **Tasks**: every order across projects, filterable by project and status, plus **scheduled tasks**: create one (project, title, order, and *every day*, *weekly* on chosen days, or *once*), switch it on/off, run it now (⚡) or delete it. A master switch pauses all of them.
+- **Tasks**: every order across projects, filterable by project and status.
+- **Automatizaciones**: **scheduled tasks** grouped by department, with the last run and its result: create one (project, title, order, and *every day*, *weekly* on chosen days, or *once*), switch it on/off, run it now (⚡) or delete it. A master switch pauses all of them. Below them, Claude Desktop scheduled tasks (read-only, managed in the Claude app) and the latest project signals.
 - **Calendar**: month view of scheduled tasks and past runs.
 
 Scheduled tasks run on the server as if you had typed the order yourself, so they **use your Claude plan** while the app is running. Nothing is scheduled by default, occurrences missed while the server was off are not replayed, and one-off tasks switch themselves off after running.
@@ -226,18 +235,67 @@ Everything about your agents lives in **`config.json`**. It's created from `conf
 | Field | Meaning |
 | --- | --- |
 | `id` | Unique identifier (lowercase, no spaces). |
-| `name` | Name shown on the room and in the UI. |
+| `name` | Project name shown in the UI. |
 | `live` | Optional. With Claude connected every agent is real; set `false` to keep one simulated. |
 | `aliases` | What you can type after `@` in the chat. |
-| `color`, `icon` | Room accent color (hex) and icon name: `briefcase`, `store`, `rocket`, `megaphone`, `compass`, `trophy`, `headphones`, `music`, `book`, `code`, `cart`, `building`, `palette`, `pen`, `plane`, `home`, `heart`, `wallet`, `fitness`, `study`, `bot`. |
-| `agents` | Number of desks drawn in the room (visual). |
+| `color`, `icon` | Accent color (hex, also the employee's clothes and the room rug) and icon name: `briefcase`, `store`, `rocket`, `megaphone`, `compass`, `trophy`, `headphones`, `music`, `book`, `code`, `cart`, `building`, `palette`, `pen`, `plane`, `home`, `heart`, `wallet`, `fitness`, `study`, `bot`. |
+| `agents` | Number of agents counted in the top bar (visual only). |
 | `folder` | The agent's working folder. It's created automatically and is the only place the agent can write. |
 | `description` | One line the router uses to understand the project. |
 | `keywords` | Hints for the router, and the only routing signal in demo mode. |
 | `tools` | Claude Code tools the agent may use (`Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `WebSearch`, `WebFetch`, …). |
 | `systemPrompt` | The agent's role and style. The Brain appends its own working rules (plan, progress, approvals, folders). |
 | `model` | Optional per-agent model. Defaults to `defaults.model`. |
-| `fallback` | `true` for the catch-all **General** agent only. |
+| `fallback` | `true` for the catch-all **General** agent only. It sits in the atrium. |
+| `department` | Optional. Floor wing for the employee; projects with the same department share a room. Without it, the project gets a room of its own. |
+| `agentName`, `role` | Optional. Employee name and job title on the card. By default a stable name is picked from the id and the role is `name`. |
+| `claudeUrl` | Optional. Link to the matching project on claude.ai for **Abrir en Claude**. |
+| `inheritProjectSettings` | Optional. `true` loads the `CLAUDE.md` and project settings of the agent's `folder`, for agents that work inside one of your repos. |
+| `actions` | Optional. Fixed commands the server may run after your approval (see below). |
+
+`folder` can also be an absolute path to one of your repositories. Several employees can share it. If an absolute folder doesn't exist, the run fails with a clear message instead of creating it.
+
+An optional top-level `office` block sets the headline and the chief of staff:
+
+```json
+"office": {
+  "title": "My AI office",
+  "chief": { "name": "Iris", "role": "Chief of staff" },
+  "claudeScheduledTasksDir": "~/.claude/scheduled-tasks"
+}
+```
+
+### Approved actions
+
+```json
+"actions": [
+  { "id": "publish-video", "label": "Publish today's video", "command": "npm run publish", "timeoutSec": 900 }
+]
+```
+
+The command is written by you and runs in the project's `folder`. It runs in two cases, both after you approve:
+
+- An agent asks for it with `request_approval` and the action id. The card's button then says what will happen (for example *Aprobar y publicar*). Agents can't invent ids or change the command.
+- You click the action on the employee's card. That creates an order waiting for your decision, showing the exact command and folder.
+
+Output goes to the project log line by line; the order ends as done or failed with the last lines as a note. Actions requested by a simulated agent are never executed: the log only says what would have run.
+
+### Project signals
+
+A project can write `<folder>/.brain/status.json`; The Brain only reads it (every minute):
+
+```json
+{
+  "updatedAt": "2026-11-10T10:05:00Z",
+  "headline": "Today's video is ready",
+  "tone": "ok",
+  "items": [{ "label": "Followers", "value": "1,240", "delta": "+18" }],
+  "report": "reports/2026-11-10.md",
+  "image": "out/cover.jpg"
+}
+```
+
+`tone` is `ok`, `warn` or `error`; up to 6 `items`. `report` (Markdown) and `image` (jpg/png) are optional paths inside the project folder, served read-only.
 
 To **add a project**, append an entry to `projects`. To **remove** one, delete its entry. Its past runs stay in the database.
 
@@ -247,9 +305,11 @@ The Brain is built so that agents can prepare work but never act on the outside 
 
 - **No sending, publishing or paying.** Agents have no tool to do it. External work goes through `request_approval`, which pauses until you decide.
 - **Folder sandbox.** An agent can write only inside its own `folder`, and read only its folder and `/brain`. Attempts outside are denied and logged.
-- **Blocked commands.** Even when `Bash` is allowed, commands that delete files or reach the network (`rm`, `rmdir`, `del`, `Remove-Item`, `git push`, `curl`, `wget`, `ssh`, …) are blocked.
+- **Blocked commands.** Even when `Bash` is allowed, commands that delete files or reach the network (`rm`, `rmdir`, `del`, `Remove-Item`, `git push`, `curl`, `wget`, `ssh`, …) are blocked, and so are the commands of the project's own `actions`.
+- **No secrets.** No agent can read or write `.env*` files, and Bash commands that mention them are blocked.
+- **Actions only after approval.** Commands from `actions` are run by the server, with a time limit and without your Claude credentials in their environment, and only after you approve.
 - **Only listed tools.** An agent gets exactly the tools in its `tools` list.
-- **No inherited settings.** Agents don't load your personal Claude Code settings, hooks or `CLAUDE.md`.
+- **No inherited settings by default.** Agents don't load your personal Claude Code settings, hooks or `CLAUDE.md`. With `inheritProjectSettings` an agent loads only the project settings of its own folder.
 - **Bounded runs.** Each run has a maximum number of turns.
 - **Full log.** Every text the agent writes and every tool call (with its input) is stored, including denials.
 
@@ -293,15 +353,18 @@ server/               Node + Fastify + WebSocket + SQLite
   src/brain.ts        Brain notes on disk, backups, agent context
   src/db.ts           SQLite persistence
   src/scheduler.ts    runs scheduled tasks on time
+  src/actions.ts      approved actions run by the server
+  src/signals.ts      project signals (.brain/status.json) and their files
+  src/automations.ts  read-only Claude Desktop scheduled tasks
   src/agents/
     claude.ts         real agent (Claude Agent SDK)
     tools.ts          MCP tools: plan_orders, update_order, request_approval, brain_write
     guard.ts          tool permission guard
     simulated.ts      demo agent
 web/                  React + Vite + Tailwind
-  src/office/         isometric SVG office, The Brain core, label placement
+  src/office3d/       3D office: layout, building, rooms, characters, camera, HUD
   src/components/     top bar, chat, order queue, agent panel
-  src/views/          Tasks, Calendar, Brain
+  src/views/          Tasks, Automations, Calendar, Brain
 ```
 
 ## Scripts
@@ -338,4 +401,5 @@ web/                  React + Vite + Tailwind
 | b | Server, chat, routing and a real agent | ✅ |
 | c | All agents live, persistent Brain (agents read and write `/brain`), cancel runs | ✅ |
 | d | Scheduled tasks and calendar backed by the server | ✅ |
+| e | 3D office, departments, decisions in the scene, approved actions, signals and automations | ✅ |
 
