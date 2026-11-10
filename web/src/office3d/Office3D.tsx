@@ -15,9 +15,19 @@ import { FloorChip } from './hud/FloorChip'
 import { Headline } from './hud/Headline'
 import { OverviewLabels } from './hud/OverviewLabels'
 import { buildLayout, roomLabel, type OfficeLayout, type RoomLayout, type Seat } from './layout'
+import { Fallback } from './Fallback'
 import { CHIEF_LOOK, lookFor } from './look'
 import { Room, ScreenTicker, type ScreenContent } from './Room'
 import { useOffice } from './state'
+
+const WEBGL = (() => {
+  try {
+    const c = document.createElement('canvas')
+    return !!(c.getContext('webgl2') || c.getContext('webgl'))
+  } catch {
+    return false
+  }
+})()
 
 /** Ignora los clics que en realidad eran arrastres para girar la cámara. */
 const isClick = (e: ThreeEvent<MouseEvent>) => e.delta < 6
@@ -111,6 +121,8 @@ export default function Office3D() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [back])
+
+  if (!WEBGL) return <Fallback onOverview={back} />
 
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(180deg, #8dbbdc 0%, #c4dce8 48%, #e9eee4 100%)' }}>

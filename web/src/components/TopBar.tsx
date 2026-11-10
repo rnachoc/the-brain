@@ -72,7 +72,7 @@ export function TopBar() {
               tab === t.id ? 'bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]' : 'text-slate-400 hover:text-slate-200',
             )}
           >
-            <t.icon size={15} strokeWidth={2} className={tab === t.id ? 'text-violet-300' : ''} />
+            <t.icon size={15} strokeWidth={2} className={tab === t.id ? 'text-[#F5B800]' : ''} />
             {t.label}
           </button>
         ))}

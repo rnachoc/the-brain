@@ -121,7 +121,7 @@ export function ChatBar() {
         </ul>
       )}
 
-      <div className="flex items-center gap-2 rounded-xl bg-white/[0.035] p-1.5 pl-4 ring-1 ring-inset ring-white/[0.08] transition focus-within:bg-white/[0.05] focus-within:ring-violet-400/40">
+      <div className="flex items-center gap-2 rounded-xl bg-white/[0.035] p-1.5 pl-4 ring-1 ring-inset ring-white/[0.08] transition focus-within:bg-white/[0.05] focus-within:ring-[#F5B800]/40">
         <AtSign size={16} className="shrink-0 text-slate-500" />
         <input
           ref={inputRef}
@@ -141,7 +141,7 @@ export function ChatBar() {
           onClick={() => send(draft)}
           disabled={!draft.trim()}
           aria-label="Enviar"
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-violet-500 text-white shadow-lg shadow-violet-500/25 transition hover:bg-violet-400 disabled:bg-white/[0.06] disabled:text-slate-500 disabled:shadow-none"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F5B800] text-[#1b1406] shadow-lg shadow-[#F5B800]/20 transition hover:bg-[#ffc824] disabled:bg-white/[0.06] disabled:text-slate-500 disabled:shadow-none"
         >
           <ArrowUp size={17} strokeWidth={2.4} />
         </button>
