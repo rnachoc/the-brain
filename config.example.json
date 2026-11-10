@@ -12,32 +12,28 @@
       "WebFetch"
     ]
   },
+  "office": {
+    "title": "Mi oficina de agentes de IA",
+    "chief": {
+      "name": "Iris",
+      "role": "Jefa de gabinete"
+    },
+    "claudeScheduledTasksDir": "~/.claude/scheduled-tasks"
+  },
   "projects": [
     {
-      "id": "jobs",
-      "name": "Búsqueda de empleo",
+      "id": "general",
+      "name": "General",
       "aliases": [
-        "jobs",
-        "empleo",
-        "linkedin"
+        "general"
       ],
-      "color": "#38bdf8",
-      "icon": "briefcase",
+      "color": "#94a3b8",
+      "icon": "compass",
       "agents": 1,
-      "folder": "workspaces/jobs",
-      "description": "Respuestas a recruiters, CV adaptado a cada oferta y preparación de entrevistas.",
-      "keywords": [
-        "recruiter",
-        "reclutador",
-        "cv",
-        "currículum",
-        "entrevista",
-        "oferta",
-        "empleo",
-        "trabajo",
-        "salario",
-        "linkedin"
-      ],
+      "folder": "workspaces/general",
+      "description": "Agente de respaldo para todo lo que no encaja en otro proyecto.",
+      "keywords": [],
+      "fallback": true,
       "tools": [
         "Read",
         "Write",
@@ -47,42 +43,10 @@
         "WebSearch",
         "WebFetch"
       ],
-      "systemPrompt": "Eres el agente de búsqueda de empleo del usuario. Lee brain/perfil.md para conocer su perfil y el tipo de puesto que busca. Redactas respuestas a recruiters, mensajes de networking, adaptas el CV a cada oferta y preparas entrevistas. Tono profesional, cercano y directo. Nunca envíes nada: deja siempre el borrador y pide aprobación."
-    },
-    {
-      "id": "freelance",
-      "name": "Clientes Freelance",
-      "aliases": [
-        "freelance",
-        "clientes"
-      ],
-      "color": "#34d399",
-      "icon": "store",
-      "agents": 1,
-      "folder": "workspaces/freelance",
-      "description": "Prospección de clientes, propuestas, presupuestos y entregas.",
-      "keywords": [
-        "cliente",
-        "clientes",
-        "propuesta",
-        "presupuesto",
-        "precio",
-        "precios",
-        "factura",
-        "prospección",
-        "web",
-        "diseño"
-      ],
-      "tools": [
-        "Read",
-        "Write",
-        "Edit",
-        "Glob",
-        "Grep",
-        "WebSearch",
-        "WebFetch"
-      ],
-      "systemPrompt": "Eres el agente comercial del trabajo freelance del usuario. Prospectas clientes potenciales, preparas propuestas claras con precios por paquetes y organizas las entregas. Sé concreto con precios y plazos. Nunca contactes a nadie: deja el borrador y pide aprobación."
+      "systemPrompt": "Eres el asistente general del usuario. Resuelves peticiones que no pertenecen a ningún proyecto concreto: investigación, resúmenes, organización. Si algo encaja mejor en un proyecto, dilo. Nunca envíes ni publiques nada: deja el borrador y pide aprobación.",
+      "department": "Atrio",
+      "agentName": "Hugo",
+      "role": "Asistente general"
     },
     {
       "id": "app",
@@ -118,7 +82,48 @@
         "Bash",
         "WebSearch"
       ],
-      "systemPrompt": "Eres el tech lead y product manager del proyecto personal del usuario. Planificas el roadmap, priorizas el backlog, escribes especificaciones y código y revisas decisiones técnicas. Sé pragmático: MVP primero. Nunca despliegues ni publiques nada: deja el resultado y pide aprobación."
+      "systemPrompt": "Eres el tech lead y product manager del proyecto personal del usuario. Planificas el roadmap, priorizas el backlog, escribes especificaciones y código y revisas decisiones técnicas. Sé pragmático: MVP primero. Nunca despliegues ni publiques nada: deja el resultado y pide aprobación.",
+      "department": "Producto",
+      "agentName": "Tomás",
+      "role": "Product manager"
+    },
+    {
+      "id": "freelance",
+      "name": "Clientes Freelance",
+      "aliases": [
+        "freelance",
+        "clientes"
+      ],
+      "color": "#34d399",
+      "icon": "store",
+      "agents": 1,
+      "folder": "workspaces/freelance",
+      "description": "Prospección de clientes, propuestas, presupuestos y entregas.",
+      "keywords": [
+        "cliente",
+        "clientes",
+        "propuesta",
+        "presupuesto",
+        "precio",
+        "precios",
+        "factura",
+        "prospección",
+        "web",
+        "diseño"
+      ],
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Glob",
+        "Grep",
+        "WebSearch",
+        "WebFetch"
+      ],
+      "systemPrompt": "Eres el agente comercial del trabajo freelance del usuario. Prospectas clientes potenciales, preparas propuestas claras con precios por paquetes y organizas las entregas. Sé concreto con precios y plazos. Nunca contactes a nadie: deja el borrador y pide aprobación.",
+      "department": "Negocio",
+      "agentName": "Lucía",
+      "role": "Comercial"
     },
     {
       "id": "social",
@@ -155,21 +160,36 @@
         "WebSearch",
         "WebFetch"
       ],
-      "systemPrompt": "Eres el community manager del usuario. Propones ideas de contenido, mantienes un calendario editorial y redactas publicaciones adaptadas a cada red. Tono con personalidad y cercano. Nunca publiques ni envíes nada: deja el borrador y pide aprobación."
+      "systemPrompt": "Eres el community manager del usuario. Propones ideas de contenido, mantienes un calendario editorial y redactas publicaciones adaptadas a cada red. Tono con personalidad y cercano. Nunca publiques ni envíes nada: deja el borrador y pide aprobación.",
+      "department": "Negocio",
+      "agentName": "Bruno",
+      "role": "Community manager"
     },
     {
-      "id": "general",
-      "name": "General",
+      "id": "jobs",
+      "name": "Búsqueda de empleo",
       "aliases": [
-        "general"
+        "jobs",
+        "empleo",
+        "linkedin"
       ],
-      "color": "#94a3b8",
-      "icon": "compass",
+      "color": "#38bdf8",
+      "icon": "briefcase",
       "agents": 1,
-      "folder": "workspaces/general",
-      "description": "Agente de respaldo para todo lo que no encaja en otro proyecto.",
-      "keywords": [],
-      "fallback": true,
+      "folder": "workspaces/jobs",
+      "description": "Respuestas a recruiters, CV adaptado a cada oferta y preparación de entrevistas.",
+      "keywords": [
+        "recruiter",
+        "reclutador",
+        "cv",
+        "currículum",
+        "entrevista",
+        "oferta",
+        "empleo",
+        "trabajo",
+        "salario",
+        "linkedin"
+      ],
       "tools": [
         "Read",
         "Write",
@@ -179,7 +199,10 @@
         "WebSearch",
         "WebFetch"
       ],
-      "systemPrompt": "Eres el asistente general del usuario. Resuelves peticiones que no pertenecen a ningún proyecto concreto: investigación, resúmenes, organización. Si algo encaja mejor en un proyecto, dilo. Nunca envíes ni publiques nada: deja el borrador y pide aprobación."
+      "systemPrompt": "Eres el agente de búsqueda de empleo del usuario. Lee brain/perfil.md para conocer su perfil y el tipo de puesto que busca. Redactas respuestas a recruiters, mensajes de networking, adaptas el CV a cada oferta y preparas entrevistas. Tono profesional, cercano y directo. Nunca envíes nada: deja siempre el borrador y pide aprobación.",
+      "department": "Personal",
+      "agentName": "Valeria",
+      "role": "Búsqueda de empleo"
     }
   ]
 }

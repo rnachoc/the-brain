@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Project } from '../../shared/types'
 
@@ -10,11 +11,20 @@ export const DATA_DIR = join(ROOT, 'data')
 interface RawConfig {
   defaults: { model: string; routerModel: string; tools: string[] }
   projects: (Partial<Project> & Pick<Project, 'id' | 'name' | 'color'>)[]
+  office?: Partial<OfficeConfig>
+}
+
+export interface OfficeConfig {
+  title: string
+  chief: { name: string; role: string }
+  /** Carpeta de las tareas programadas de Claude Desktop (solo lectura). */
+  claudeScheduledTasksDir: string
 }
 
 export interface AppConfig {
   defaults: RawConfig['defaults']
   projects: Project[]
+  office: OfficeConfig
 }
 
 /** Se lee en cada uso para que editar config.json no requiera reiniciar. */
@@ -35,11 +45,24 @@ export function loadConfig(): AppConfig {
       systemPrompt: '',
       ...p,
     })),
+    office: {
+      title: raw.office?.title ?? 'Mi oficina de agentes de IA',
+      chief: { name: 'Iris', role: 'Jefa de gabinete', ...raw.office?.chief },
+      claudeScheduledTasksDir: expandHome(raw.office?.claudeScheduledTasksDir ?? '~/.claude/scheduled-tasks'),
+    },
   }
 }
 
+const expandHome = (p: string) => (p === '~' || p.startsWith('~/') || p.startsWith('~\\') ? join(homedir(), p.slice(1)) : p)
+
+/**
+ * Carpeta de trabajo del proyecto. Las de workspaces/ se crean solas; una ruta absoluta
+ * apunta a un repo tuyo y, si no existe, es un error de config.json: no la inventamos.
+ */
 export function projectFolder(p: Project): string {
   const dir = resolve(ROOT, p.folder)
+  if (isAbsolute(p.folder) && !existsSync(dir))
+    throw new Error(`La carpeta ${dir} no existe. Revisa "folder" de ${p.id} en config.json.`)
   mkdirSync(dir, { recursive: true })
   return dir
 }

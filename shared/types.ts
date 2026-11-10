@@ -29,6 +29,19 @@ export interface Project {
   role?: string
   /** Enlace al proyecto en claude.ai para el botón "Abrir en Claude". */
   claudeUrl?: string
+  /** Carga el CLAUDE.md y los ajustes del repo de `folder` (settingSources: ['project']). */
+  inheritProjectSettings?: boolean
+  /** Comandos fijos que el servidor puede ejecutar tras tu aprobación. */
+  actions?: ProjectAction[]
+}
+
+export interface ProjectAction {
+  id: string
+  label: string
+  /** Comando fijo escrito por ti; se ejecuta en `folder`. */
+  command: string
+  /** Límite de tiempo; por defecto 900 s. */
+  timeoutSec?: number
 }
 
 export interface Draft {
