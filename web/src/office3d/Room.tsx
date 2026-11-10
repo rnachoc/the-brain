@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { agentStatus, useStore } from '../store'
 import { Box, BLOB, canvasTexture, CONE, CYL, FONT, glass, mat, SPHERE } from './kit'
-import { ROOM_D, ROOM_H, type RoomLayout, type Seat } from './layout'
+import { CORE_W, ROOM_D, ROOM_H, ROOM_W, type RoomLayout, type Seat } from './layout'
 
 export interface ScreenContent {
   title: string
@@ -161,14 +161,29 @@ export function Room({ room, screen, onPick }: { room: RoomLayout; screen: Scree
   const y = room.y
   const back = -ROOM_D / 2
   const mullions = Math.round(w / 1.6)
+  // La escalera sube por el fondo del núcleo: la pantalla no puede quedar detrás de ella.
+  // En una planta entera va en el ala izquierda; en el atrio, pequeña y por encima del arranque del tramo.
+  const full = room.side === 'full'
+  const atrium = room.side === 'atrium'
+  const sx = full ? -(CORE_W / 2 + ROOM_W / 2) : atrium ? cx - 1.3 : cx
+  const sw = full ? ROOM_W : w
+  const screenW = atrium ? 1.7 : Math.min(3.6, sw - 1.6)
+  const pad = atrium ? 0.3 : 0.6
+  const screenH = atrium ? 0.95 : 1.6
+  const screenY = atrium ? 2.55 : 1.8
 
   return (
     <group onClick={onPick}>
       {/* suelo */}
       <Box s={[w, 0.04, ROOM_D]} p={[cx, y + 0.02, 0]} c={room.lounge ? '#d8cfc0' : '#c6a47c'} shadow={false} />
-      {!room.lounge && room.side !== 'atrium' && (
-        <Box s={[w - 1.6, 0.015, ROOM_D - 2]} p={[cx, y + 0.045, 0.1]} c={tint(room.color)} shadow={false} />
-      )}
+      {!room.lounge && !atrium &&
+        (full ? (
+          [-1, 1].map((sd) => (
+            <Box key={sd} s={[ROOM_W - 1.4, 0.015, ROOM_D - 2]} p={[sd * (CORE_W / 2 + ROOM_W / 2), y + 0.045, 0.1]} c={tint(room.color)} shadow={false} />
+          ))
+        ) : (
+          <Box s={[w - 1.6, 0.015, ROOM_D - 2]} p={[cx, y + 0.045, 0.1]} c={tint(room.color)} shadow={false} />
+        ))}
       {/* pared trasera de cristal con montantes */}
       <mesh position={[cx, y + ROOM_H / 2, back + 0.05]} scale={[w, ROOM_H, 1]} material={glass}>
         <planeGeometry />
@@ -178,8 +193,8 @@ export function Room({ room, screen, onPick }: { room: RoomLayout; screen: Scree
       ))}
       <Box s={[w, 0.07, 0.07]} p={[cx, y + 1.0, back + 0.05]} c="#2b2d31" shadow={false} />
       {/* panel oscuro con la pantalla */}
-      <Box s={[Math.min(4.2, w - 1), 2.2, 0.08]} p={[cx, y + 1.75, back + 0.12]} c="#24262b" />
-      <WallScreen content={screen} w={Math.min(3.6, w - 1.6)} h={1.6} position={[cx, y + 1.8, back + 0.22]} />
+      <Box s={[screenW + pad, screenH + pad, 0.08]} p={[sx, y + screenY - 0.05, back + 0.12]} c="#24262b" />
+      <WallScreen content={screen} w={screenW} h={screenH} position={[sx, y + screenY, back + 0.22]} />
       {room.lounge ? (
         <Lounge room={room} />
       ) : (

@@ -7,7 +7,7 @@ import { agentStatus, useStore } from '../store'
 import type { Project } from '../types'
 import { Building } from './Building'
 import { CameraRig, FOV, seatFocus, type Focus } from './CameraRig'
-import { BlockPerson, Employee } from './Character'
+import { BlockPerson, Employee, useChiefAnim } from './Character'
 import { AgentCard } from './hud/AgentCard'
 import { ChiefLine } from './hud/ChiefLine'
 import { Filters } from './hud/Filters'
@@ -97,6 +97,7 @@ function SeatedEmployee({ p, room, seat, selected }: { p: Project; room: RoomLay
 function Chief({ layout, onPick }: { layout: OfficeLayout; onPick: () => void }) {
   const target = useStore((s) => s.routerNote?.projectIds[0])
   const ref = useRef<THREE.Group>(null)
+  const anim = useChiefAnim()
   const { x, z } = layout.chief
   const y = layout.atrium.y
   const angle = useMemo(() => {
@@ -115,7 +116,7 @@ function Chief({ layout, onPick }: { layout: OfficeLayout; onPick: () => void })
         if (isClick(e)) onPick()
       }}
     >
-      <BlockPerson look={CHIEF_LOOK} sitting={false} action="hold" />
+      <BlockPerson look={CHIEF_LOOK} sitting={false} action="hold" anim={anim} />
     </group>
   )
 }
