@@ -177,3 +177,35 @@ export function roomLabel(r: RoomLayout): string {
   if (r.side === 'tower') return `Torre · ${r.name}`
   return `${r.floor === 0 ? 'Planta baja' : `Piso ${r.floor}`} · ${r.name}`
 }
+
+// ---------- Escalera y piscina (compartido por el edificio y los paseos) ----------
+
+/** Cota del suelo de la planta f. */
+export const floorTop = (f: number) => f * FLOOR_H + SLAB
+/** La escalera es en U: el tramo g sube de la planta g a la g+1, alternando sentido y carril. */
+export const STAIR_X = CORE_W / 2 - 0.3
+export const flightDir = (g: number) => (g % 2 === 0 ? 1 : -1)
+export const flightZ = (g: number) => (g % 2 === 0 ? -2.42 : -1.78)
+export const FLIGHT_D = 0.62
+/** Hueco del forjado sobre la escalera. */
+export const STAIR_HOLE = { x0: -STAIR_X - 0.1, x1: STAIR_X + 0.1, z0: -2.76, z1: -1.44 }
+
+/** Piscina: lámina de agua, tumbonas y sitios del borde. */
+export const POOL = {
+  x0: -3.6,
+  x1: 12,
+  cx: 4.2,
+  cz: 6.3,
+  waterY: 0.16,
+  lanes: [5.75, 6.85],
+  loungers: [
+    { x: -8.5, z: 6.6, rot: 0.2 },
+    { x: -7, z: 6.6, rot: 0.2 },
+    { x: -5.5, z: 6.6, rot: 0.2 },
+  ],
+  edge: [
+    { x: 1.5, z: 4.45, yaw: 0.1 },
+    { x: 6.5, z: 4.45, yaw: -0.2 },
+    { x: 9.5, z: 4.45, yaw: 0.25 },
+  ],
+}

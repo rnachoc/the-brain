@@ -3,7 +3,7 @@ import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { office } from '../config'
-import { agentStatus, useStore } from '../store'
+import { agentStatus, employeeLine, useStore } from '../store'
 import type { Project } from '../types'
 import { Building } from './Building'
 import { CameraRig, FOV, seatFocus, type Focus } from './CameraRig'
@@ -16,7 +16,7 @@ import { Headline } from './hud/Headline'
 import { OverviewLabels } from './hud/OverviewLabels'
 import { buildLayout, roomLabel, type OfficeLayout, type RoomLayout, type Seat } from './layout'
 import { Fallback } from './Fallback'
-import { CHIEF_LOOK, lookFor } from './look'
+import { CHIEF_LOOK, employeeName, lookFor } from './look'
 import { Room, ScreenTicker, type ScreenContent } from './Room'
 import { useOffice } from './state'
 
@@ -89,8 +89,20 @@ function SeatedEmployee({ p, room, seat, selected }: { p: Project; room: RoomLay
   const status = useStore((s) => agentStatus(s, p.id))
   const filter = useOffice((s) => s.filter)
   const select = useStore((s) => s.selectProject)
+  const line = useStore((s) => employeeLine(s, p.id))
   const look = useMemo(() => lookFor(p.id, p.color), [p.id, p.color])
-  return <Employee look={look} status={status} x={seat.x} y={room.y} z={seat.z} rot={seat.rot} selected={selected} dim={filter !== 'all' && filter !== status} onSelect={() => select(p.id)} />
+  return (
+    <Employee
+      look={look}
+      status={status}
+      room={room}
+      seat={seat}
+      selected={selected}
+      label={`${employeeName(p)} · ${line.length > 40 ? line.slice(0, 39) + '…' : line}`}
+      dim={filter !== 'all' && filter !== status}
+      onSelect={() => select(p.id)}
+    />
+  )
 }
 
 /** Jefe de gabinete en el atrio: gira hacia el último empleado al que ha pasado algo. */

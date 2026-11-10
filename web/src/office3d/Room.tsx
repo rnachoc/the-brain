@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { agentStatus, useStore } from '../store'
 import { Box, BLOB, canvasTexture, CONE, CYL, FONT, glass, mat, SPHERE } from './kit'
-import { CORE_W, ROOM_D, ROOM_H, ROOM_W, type RoomLayout, type Seat } from './layout'
+import { CORE_W, ROOM_D, ROOM_H, ROOM_W, STAIR_HOLE, type RoomLayout, type Seat } from './layout'
 
 export interface ScreenContent {
   title: string
@@ -175,7 +175,17 @@ export function Room({ room, screen, onPick }: { room: RoomLayout; screen: Scree
   return (
     <group onClick={onPick}>
       {/* suelo */}
-      <Box s={[w, 0.04, ROOM_D]} p={[cx, y + 0.02, 0]} c={room.lounge ? '#d8cfc0' : '#c6a47c'} shadow={false} />
+      {full ? (
+        // Planta entera: el suelo deja libre el hueco de la escalera del núcleo.
+        <>
+          {[-1, 1].map((sd) => (
+            <Box key={sd} s={[ROOM_W, 0.04, ROOM_D]} p={[sd * (CORE_W / 2 + ROOM_W / 2), y + 0.02, 0]} c="#c6a47c" shadow={false} />
+          ))}
+          <Box s={[CORE_W, 0.04, ROOM_D / 2 - STAIR_HOLE.z1]} p={[0, y + 0.02, (STAIR_HOLE.z1 + ROOM_D / 2) / 2]} c="#c6a47c" shadow={false} />
+        </>
+      ) : (
+        <Box s={[w, 0.04, ROOM_D]} p={[cx, y + 0.02, 0]} c={room.lounge ? '#d8cfc0' : '#c6a47c'} shadow={false} />
+      )}
       {!room.lounge && !atrium &&
         (full ? (
           [-1, 1].map((sd) => (
