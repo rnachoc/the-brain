@@ -21,6 +21,8 @@ export interface Project {
   fallback?: boolean
   /** Con Claude conectado todos los agentes son reales; live: false lo deja simulado. */
   live?: boolean
+  /** Planta del edificio. Los proyectos con el mismo department comparten sala. */
+  department?: string
 }
 
 export interface Draft {

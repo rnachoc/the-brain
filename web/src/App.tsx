@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { AgentPanel } from './components/AgentPanel'
 import { ChatBar } from './components/ChatBar'
 import { OrderQueue } from './components/OrderQueue'
@@ -8,6 +9,10 @@ import { BrainView } from './views/BrainView'
 import { CalendarView } from './views/CalendarView'
 import { TasksView } from './views/TasksView'
 
+// three solo se descarga al abrir la oficina. La isométrica sigue en ?iso=1 mientras se termina la 3D.
+const Office3D = lazy(() => import('./office3d/Office3D'))
+const ISO = new URLSearchParams(location.search).has('iso')
+
 export default function App() {
   const tab = useStore((s) => s.tab)
   return (
@@ -15,7 +20,14 @@ export default function App() {
       <div className="stars pointer-events-none fixed inset-0" />
       <TopBar />
       <main className="relative min-h-0 flex-1">
-        {tab === 'office' && <Office />}
+        {tab === 'office' &&
+          (ISO ? (
+            <Office />
+          ) : (
+            <Suspense fallback={null}>
+              <Office3D />
+            </Suspense>
+          ))}
         {tab === 'tasks' && <TasksView />}
         {tab === 'calendar' && <CalendarView />}
         {tab === 'brain' && <BrainView />}
