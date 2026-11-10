@@ -46,14 +46,15 @@ function viewFor(focus: Focus, layout: OfficeLayout, aspect: number): View {
   }
   if (focus.kind === 'agent') {
     const az = focus.rot * 0.7
-    const dist = 4.6
+    // Punto medio entre la silla y el sitio donde se queda de pie, para que quepa en los dos estados.
+    const mid = new THREE.Vector3(0.45, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), focus.rot)
     // El empleado queda a la izquierda del centro: desplazamos el objetivo a la derecha de la cámara.
-    const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az)).multiplyScalar(Math.min(0.9, 0.35 * aspect))
+    const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az)).multiplyScalar(Math.min(0.8, 0.3 * aspect))
     return {
-      target: new THREE.Vector3(focus.x, focus.room.y + 1.15, focus.z).add(right),
+      target: new THREE.Vector3(focus.x, focus.room.y + 1.1, focus.z).add(mid).add(right),
       az,
-      el: 6 * DEG,
-      dist,
+      el: 8 * DEG,
+      dist: 6.4,
       azRange: 30 * DEG,
       elMin: 0,
       elMax: 25 * DEG,

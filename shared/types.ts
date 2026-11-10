@@ -23,6 +23,10 @@ export interface Project {
   live?: boolean
   /** Planta del edificio. Los proyectos con el mismo department comparten sala. */
   department?: string
+  /** Nombre del empleado (p. ej. "Tomás"). Por defecto se asigna uno estable a partir del id. */
+  agentName?: string
+  /** Cargo que se ve en la tarjeta. Por defecto, el name del proyecto. */
+  role?: string
 }
 
 export interface Draft {

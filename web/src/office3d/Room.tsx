@@ -1,7 +1,8 @@
 // Una sala por departamento: suelo, alfombra del color del proyecto, puestos, pantalla de pared, plantas y lámpara.
-import type { ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo } from 'react'
+import { useFrame, type ThreeEvent } from '@react-three/fiber'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { agentStatus, useStore } from '../store'
 import { Box, BLOB, canvasTexture, CONE, CYL, FONT, glass, mat, SPHERE } from './kit'
 import { ROOM_D, ROOM_H, type RoomLayout, type Seat } from './layout'
 
@@ -86,8 +87,36 @@ function Lamp({ x, y }: { x: number; y: number }) {
   )
 }
 
+// Una sola textura de "código" compartida por todos los monitores encendidos.
+const code = canvasTexture(128, 72, () => undefined)
+const CODE_MAT = new THREE.MeshBasicMaterial({ map: code, toneMapped: false })
+const OFF_MAT = new THREE.MeshBasicMaterial({ color: '#1e293b' })
+const CODE_COLORS = ['#7dd3fc', '#a5b4fc', '#5eead4', '#fcd34d', '#e2e8f0']
+let codeRow = 0
+
+/** Hace avanzar las líneas de los monitores encendidos. Va una vez dentro del Canvas. */
+export function ScreenTicker() {
+  const acc = useRef(0)
+  useFrame((_, dt) => {
+    acc.current += dt
+    if (acc.current < 0.18) return
+    acc.current = 0
+    const ctx = (code.image as HTMLCanvasElement).getContext('2d')!
+    ctx.drawImage(ctx.canvas, 0, -8)
+    ctx.fillStyle = '#0f172a'
+    ctx.fillRect(0, 64, 128, 8)
+    codeRow++
+    const indent = (codeRow * 7) % 4
+    ctx.fillStyle = CODE_COLORS[codeRow % CODE_COLORS.length]
+    ctx.fillRect(6 + indent * 8, 66, 20 + ((codeRow * 37) % 70), 4)
+    code.needsUpdate = true
+  })
+  return null
+}
+
 /** Mesa con monitor y silla. El empleado se sienta en el origen mirando a +z. */
-export function Desk({ seat, y, screenOn }: { seat: Seat; y: number; screenOn?: boolean }) {
+export function Desk({ seat, y }: { seat: Seat; y: number }) {
+  const screenOn = useStore((s) => agentStatus(s, seat.projectId) === 'running')
   return (
     <group position={[seat.x, y, seat.z]} rotation={[0, seat.rot, 0]}>
       {/* mesa */}
@@ -98,9 +127,8 @@ export function Desk({ seat, y, screenOn }: { seat: Seat; y: number; screenOn?: 
       <group position={[-0.45, 0.77, 0.72]} rotation={[0, 2.6, 0]}>
         <Box s={[0.05, 0.22, 0.05]} p={[0, 0.11, 0]} c="#222" />
         <Box s={[0.66, 0.4, 0.04]} p={[0, 0.42, 0]} c="#15161a" />
-        <mesh position={[0, 0.42, 0.022]}>
+        <mesh position={[0, 0.42, 0.022]} material={screenOn ? CODE_MAT : OFF_MAT}>
           <planeGeometry args={[0.6, 0.34]} />
-          <meshBasicMaterial color={screenOn ? '#7dd3fc' : '#1e293b'} toneMapped={false} />
         </mesh>
       </group>
       <Box s={[0.42, 0.02, 0.14]} p={[0.1, 0.78, 0.46]} c="#d4d4d8" shadow={false} />

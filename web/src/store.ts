@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { projects } from './config'
+import { nextOccurrence } from '../../shared/schedule'
 import type {
   AgentStatus,
   BrainNote,
@@ -181,3 +182,44 @@ export function lastAction(s: State, projectId: string): string | undefined {
   }
   return undefined
 }
+
+const WEEKDAY = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb']
+
+/** Próxima programada activa del proyecto, o null. */
+export function nextSchedule(s: State, projectId: string): { id: string; title: string; at: number } | null {
+  let best: { id: string; title: string; at: number } | null = null
+  if (s.schedulesPaused) return null
+  for (const sc of s.schedules) {
+    if (sc.projectId !== projectId || !sc.enabled) continue
+    const at = nextOccurrence(sc.rule)?.getTime()
+    if (at && (!best || at < best.at)) best = { id: sc.id, title: sc.title, at }
+  }
+  return best
+}
+
+/**
+ * Línea de estado del empleado: orden que espera → orden en curso → próxima programada
+ * → último resultado → "Libre".
+ */
+export function employeeLine(s: State, projectId: string): string {
+  let running: string | undefined
+  for (let i = s.orders.length - 1; i >= 0; i--) {
+    const o = s.orders[i]
+    if (o.projectId !== projectId) continue
+    if (o.status === 'awaiting_approval') return o.title
+    if (o.status === 'running' && !running) running = o.title
+  }
+  if (running) return running
+  const next = nextSchedule(s, projectId)
+  if (next) {
+    const d = new Date(next.at)
+    const hm = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+    return `Programado: ${WEEKDAY[d.getDay()]} ${hm} · ${next.title}`
+  }
+  let last: Run | undefined
+  for (const r of s.runs) if (r.projectId === projectId && r.endedAt && (!last || r.endedAt > last.endedAt!)) last = r
+  return last?.result ?? 'Libre'
+}
+
+export const pendingApprovals = (s: State, projectId: string): number =>
+  s.orders.reduce((n, o) => n + (o.projectId === projectId && o.status === 'awaiting_approval' ? 1 : 0), 0)
