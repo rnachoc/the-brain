@@ -57,7 +57,8 @@ export async function runClaude(project: Project, run: Run, abort: AbortControll
         log('warn', `⛔ ${tool} bloqueada: ${reason}`, JSON.stringify(input)),
       ),
       permissionMode: 'default',
-      settingSources: [],
+      // Con inheritProjectSettings el agente sigue el CLAUDE.md y los ajustes del repo de su carpeta.
+      settingSources: project.inheritProjectSettings ? ['project'] : [],
       maxTurns: MAX_TURNS,
       env: agentEnv(),
     },
