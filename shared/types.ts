@@ -1,4 +1,4 @@
-export type Tab = 'office' | 'tasks' | 'calendar' | 'brain'
+export type Tab = 'office' | 'tasks' | 'automations' | 'calendar' | 'brain'
 
 export type AgentStatus = 'idle' | 'running' | 'waiting'
 export type OrderStatus = 'pending' | 'running' | 'awaiting_approval' | 'done' | 'rejected' | 'failed'
@@ -61,6 +61,8 @@ export interface Order {
   /** Afecta a algo externo: se pausa y pide aprobación. */
   external: boolean
   draft?: Draft
+  /** Acción del proyecto que el servidor ejecutará si apruebas. */
+  action?: { id: string; label: string }
   note?: string
   createdAt: number
   updatedAt: number
@@ -127,6 +129,28 @@ export interface RouterNote {
   projectIds: string[]
 }
 
+/** Señal que escribe un proyecto en <folder>/.brain/status.json. The Brain solo la lee. */
+export interface ProjectSignal {
+  updatedAt: string
+  headline: string
+  tone: 'ok' | 'warn' | 'error'
+  items: { label: string; value: string; delta?: string }[]
+  /** Rutas relativas a la carpeta del proyecto (Markdown e imagen jpg/png). */
+  report?: string
+  image?: string
+  /** Fecha de modificación del archivo, en ms. */
+  mtime: number
+}
+
+/** Tarea programada de Claude Desktop (solo lectura). */
+export interface ClaudeTask {
+  id: string
+  name: string
+  description: string
+  updatedAt: number
+  body: string
+}
+
 // ---------- Protocolo servidor ↔ web ----------
 
 export interface Snapshot {
@@ -138,6 +162,8 @@ export interface Snapshot {
   /** Interruptor general: con true no se lanza ninguna tarea programada. */
   schedulesPaused: boolean
   question: RouterQuestion | null
+  /** Señal más reciente de cada proyecto que tiene .brain/status.json. */
+  signals: Record<string, ProjectSignal>
   /** Hay API key: el router y los agentes live usan Claude. */
   live: boolean
 }
@@ -153,3 +179,4 @@ export type ServerEvent =
   | { type: 'schedule'; schedule: Schedule }
   | { type: 'scheduleRemoved'; id: string }
   | { type: 'schedulesPaused'; paused: boolean }
+  | { type: 'signal'; projectId: string; signal: ProjectSignal | null }

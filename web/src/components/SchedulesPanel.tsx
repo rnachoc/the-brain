@@ -1,7 +1,7 @@
 import { CalendarClock, Pause, Play, Plus, Trash2, Zap } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store'
-import type { ScheduleRule } from '../types'
+import type { Run, Schedule, ScheduleRule } from '../types'
 import { cx, describeRule, fmtDateTime, nextOccurrence } from '../util'
 import { ProjectTag } from './bits'
 
@@ -118,15 +118,80 @@ function NewSchedule({ onDone }: { onDone: () => void }) {
   )
 }
 
+/** Run que lanzó la última ejecución de la programada (mismo proyecto y orden, hacia esa hora). */
+function lastRunOf(runs: Run[], s: Schedule): Run | undefined {
+  if (!s.lastRunAt) return undefined
+  return runs
+    .filter((r) => r.projectId === s.projectId && r.prompt === s.prompt && Math.abs(r.startedAt - s.lastRunAt!) < 120_000)
+    .sort((a, b) => b.startedAt - a.startedAt)[0]
+}
+
+function Item({ s, paused }: { s: Schedule; paused: boolean }) {
+  const select = useStore((st) => st.selectProject)
+  const showDetail = useStore((st) => st.showDetail)
+  const toggle = useStore((st) => st.toggleSchedule)
+  const remove = useStore((st) => st.deleteSchedule)
+  const runNow = useStore((st) => st.runScheduleNow)
+  const runs = useStore((st) => st.runs)
+  const last = useMemo(() => lastRunOf(runs, s), [runs, s])
+  const next = s.enabled && !paused ? nextOccurrence(s.rule) : null
+  return (
+    <li className={cx('rounded-xl border border-white/[0.06] bg-hq-panel/70 p-3', (!s.enabled || paused) && 'opacity-60')}>
+      <div className="flex items-center gap-2">
+        <ProjectTag id={s.projectId} onClick={() => select(s.projectId)} />
+        <div className="ml-auto flex items-center gap-1">
+          <button onClick={() => runNow(s.id)} title="Ejecutar ahora" className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white">
+            <Zap size={14} />
+          </button>
+          <button
+            onClick={() => window.confirm(`¿Borrar la programación "${s.title}"?`) && remove(s.id)}
+            title="Borrar"
+            className="rounded-md p-1.5 text-slate-400 hover:bg-rose-500/10 hover:text-rose-300"
+          >
+            <Trash2 size={14} />
+          </button>
+          <Toggle on={s.enabled} onClick={() => toggle(s.id)} label={s.enabled ? 'Desactivar' : 'Activar'} />
+        </div>
+      </div>
+      <div className="mt-2 text-[13px] font-medium text-slate-100">{s.title}</div>
+      <div className="text-[12px] leading-snug text-slate-400">{s.prompt}</div>
+      <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-[11px] text-slate-500">
+        <span>{describeRule(s.rule)}</span>
+        {next && <span>próxima: {fmtDateTime(next.getTime())}</span>}
+      </div>
+      {s.lastRunAt && (
+        <button
+          onClick={() => (select(s.projectId), showDetail(true))}
+          title="Ver el run en el detalle del empleado"
+          className="mt-2 flex w-full items-center gap-2 rounded-lg bg-white/[0.03] px-2.5 py-1.5 text-left text-[11px] text-slate-400 ring-1 ring-inset ring-white/[0.05] hover:bg-white/[0.06]"
+        >
+          <span className={cx('h-1.5 w-1.5 shrink-0 rounded-full', !last ? 'bg-slate-500' : last.status === 'done' ? 'bg-emerald-400' : last.status === 'failed' ? 'bg-rose-400' : 'bg-sky-400')} />
+          <span className="shrink-0">última: {fmtDateTime(s.lastRunAt)}</span>
+          <span className="truncate text-slate-500">{last?.result ?? (last ? 'en curso' : '')}</span>
+        </button>
+      )}
+    </li>
+  )
+}
+
 export function SchedulesPanel() {
   const schedules = useStore((s) => s.schedules)
   const paused = useStore((s) => s.schedulesPaused)
   const setPaused = useStore((s) => s.setSchedulesPaused)
-  const select = useStore((s) => s.selectProject)
-  const toggle = useStore((s) => s.toggleSchedule)
-  const remove = useStore((s) => s.deleteSchedule)
-  const runNow = useStore((s) => s.runScheduleNow)
+  const projects = useStore((s) => s.projects)
   const [adding, setAdding] = useState(false)
+
+  // Agrupadas por departamento, en el orden de config.json.
+  const groups = useMemo(() => {
+    const map = new Map<string, Schedule[]>()
+    for (const p of projects) {
+      const items = schedules.filter((s) => s.projectId === p.id)
+      if (!items.length) continue
+      const name = p.department?.trim() || p.name
+      map.set(name, [...(map.get(name) ?? []), ...items])
+    }
+    return [...map].map(([name, items]) => ({ name, items }))
+  }, [projects, schedules])
 
   return (
     <aside>
@@ -165,35 +230,16 @@ export function SchedulesPanel() {
             <span className="text-[11px] text-slate-500">Crea una para que un agente trabaje solo a su hora.</span>
           </li>
         )}
-        {schedules.map((s) => {
-          const next = s.enabled && !paused ? nextOccurrence(s.rule) : null
-          return (
-            <li key={s.id} className={cx('rounded-xl border border-white/[0.06] bg-hq-panel/70 p-3', (!s.enabled || paused) && 'opacity-60')}>
-              <div className="flex items-center gap-2">
-                <ProjectTag id={s.projectId} onClick={() => select(s.projectId)} />
-                <div className="ml-auto flex items-center gap-1">
-                  <button onClick={() => runNow(s.id)} title="Ejecutar ahora" className="rounded-md p-1.5 text-slate-400 hover:bg-white/5 hover:text-white">
-                    <Zap size={14} />
-                  </button>
-                  <button
-                    onClick={() => window.confirm(`¿Borrar la programación "${s.title}"?`) && remove(s.id)}
-                    title="Borrar"
-                    className="rounded-md p-1.5 text-slate-400 hover:bg-rose-500/10 hover:text-rose-300"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                  <Toggle on={s.enabled} onClick={() => toggle(s.id)} label={s.enabled ? 'Desactivar' : 'Activar'} />
-                </div>
-              </div>
-              <div className="mt-2 text-[13px] font-medium text-slate-100">{s.title}</div>
-              <div className="text-[12px] leading-snug text-slate-400">{s.prompt}</div>
-              <div className="mt-2 flex flex-wrap justify-between gap-x-3 text-[11px] text-slate-500">
-                <span>{describeRule(s.rule)}</span>
-                {next ? <span>próxima: {fmtDateTime(next.getTime())}</span> : s.lastRunAt ? <span>última: {fmtDateTime(s.lastRunAt)}</span> : null}
-              </div>
-            </li>
-          )
-        })}
+        {groups.map((g) => (
+          <li key={g.name}>
+            <div className="mb-1.5 mt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{g.name}</div>
+            <ul className="grid gap-2 lg:grid-cols-2">
+              {g.items.map((s) => (
+                <Item key={s.id} s={s} paused={paused} />
+              ))}
+            </ul>
+          </li>
+        ))}
       </ul>
     </aside>
   )

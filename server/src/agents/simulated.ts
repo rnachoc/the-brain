@@ -10,8 +10,14 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const rand = (a: number, b: number) => a + Math.random() * (b - a)
 const short = (s: string, n = 48) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 
+/** Acción del proyecto que se menciona en la petición (por su id o su texto). */
+const actionFor = (p: Project, prompt: string) => {
+  const q = prompt.toLowerCase()
+  return p.actions?.find((a) => q.includes(a.id.toLowerCase()) || q.includes(a.label.toLowerCase()))
+}
+
 function plan(p: Project, prompt: string) {
-  const external = EXTERNAL_RE.test(prompt)
+  const external = EXTERNAL_RE.test(prompt) || !!actionFor(p, prompt)
   return [
     { title: `Leer /brain y contexto de ${p.name}`, external: false },
     { title: `Analizar: "${short(prompt)}"`, external: false },
@@ -67,14 +73,17 @@ export async function runSimulated(project: Project, run: Run, abort: AbortContr
       log('info', `✓ ${o.title}`)
       continue
     }
-    hq.patchOrder(o.id, { status: 'awaiting_approval', draft: draft(project, run.prompt) })
+    const action = actionFor(project, run.prompt)
+    hq.patchOrder(o.id, { status: 'awaiting_approval', draft: draft(project, run.prompt), action: action && { id: action.id, label: action.label } })
     hq.patchRun(run.id, { status: 'waiting' })
     log('approval', `⏸ Esperando tu aprobación: ${o.title}`)
     const ok = await waitForApproval(o.id)
     if (abort.signal.aborted) throw new Error('Cancelado')
     hq.patchOrder(o.id, { status: ok ? 'done' : 'rejected' })
     hq.patchRun(run.id, { status: 'running' })
-    log(ok ? 'info' : 'warn', ok ? '✓ Aprobado: el borrador queda listo para que lo envíes tú' : '✗ Rechazado: no se hace nada con el borrador')
+    // Un agente simulado no ha preparado nada real: su acción nunca se ejecuta.
+    if (ok && action) log('info', `simulado: se habría ejecutado ${action.label}`)
+    else log(ok ? 'info' : 'warn', ok ? '✓ Aprobado: el borrador queda listo para que lo envíes tú' : '✗ Rechazado: no se hace nada con el borrador')
   }
 
   const done = repo.ordersOfRun(run.id).filter((o) => o.status === 'done').length

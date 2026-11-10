@@ -7,6 +7,7 @@ import type {
   LogEntry,
   Order,
   Project,
+  ProjectSignal,
   RouterNote,
   RouterQuestion,
   Run,
@@ -23,6 +24,7 @@ export interface State {
   schedules: Schedule[]
   notes: BrainNote[]
   question: RouterQuestion | null
+  signals: Record<string, ProjectSignal>
   routerNote: RouterNote | null
   connected: boolean
   live: boolean
@@ -48,6 +50,8 @@ export interface State {
   toggleSchedule: (id: string) => void
   deleteSchedule: (id: string) => void
   runScheduleNow: (id: string) => void
+  /** Crea una orden con la acción del proyecto que espera tu decisión. */
+  launchAction: (projectId: string, actionId: string) => void
   setSchedulesPaused: (paused: boolean) => void
 }
 
@@ -75,6 +79,7 @@ export const useStore = create<State>()((set) => ({
   schedules: [],
   schedulesPaused: false,
   question: null,
+  signals: {},
   routerNote: null,
   connected: false,
   live: false,
@@ -118,6 +123,7 @@ export const useStore = create<State>()((set) => ({
   },
   deleteSchedule: (id) => void fetch(`/api/schedules/${id}`, { method: 'DELETE' }),
   runScheduleNow: (id) => void post(`/api/schedules/${id}/run`),
+  launchAction: (projectId, actionId) => void post(`/api/projects/${projectId}/actions/${actionId}`),
   setSchedulesPaused: (paused) => void post('/api/schedules/pause', { paused }),
 }))
 
@@ -144,6 +150,12 @@ function apply(e: ServerEvent) {
         return { schedules: s.schedules.filter((x) => x.id !== e.id) }
       case 'schedulesPaused':
         return { schedulesPaused: e.paused }
+      case 'signal': {
+        const signals = { ...s.signals }
+        if (e.signal) signals[e.projectId] = e.signal
+        else delete signals[e.projectId]
+        return { signals }
+      }
       case 'note': {
         const others = s.notes.filter((n) => n.path !== e.note.path)
         return { notes: [...others, e.note].sort((a, b) => a.path.localeCompare(b.path)) }

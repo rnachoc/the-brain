@@ -4,6 +4,7 @@ import { ChatBar } from './components/ChatBar'
 import { OrderQueue } from './components/OrderQueue'
 import { TopBar } from './components/TopBar'
 import { useStore } from './store'
+import { AutomationsView } from './views/AutomationsView'
 import { BrainView } from './views/BrainView'
 import { CalendarView } from './views/CalendarView'
 import { TasksView } from './views/TasksView'
@@ -24,6 +25,7 @@ export default function App() {
           </Suspense>
         )}
         {tab === 'tasks' && <TasksView />}
+        {tab === 'automations' && <AutomationsView />}
         {tab === 'calendar' && <CalendarView />}
         {tab === 'brain' && <BrainView />}
         <AgentPanel />

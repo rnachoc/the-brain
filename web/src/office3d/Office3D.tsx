@@ -34,14 +34,41 @@ const isClick = (e: ThreeEvent<MouseEvent>) => e.delta < 6
 
 function useRoomScreen(room: RoomLayout): ScreenContent {
   const projects = useStore((s) => s.projects)
+  // La señal del proyecto manda; si no hay, el recuento de órdenes del departamento.
+  const signal = useStore((s) => room.projectIds.map((id) => s.signals[id]).find(Boolean))
+  const counts = useStore((s) => {
+    const today = new Date().setHours(0, 0, 0, 0)
+    let run = 0
+    let wait = 0
+    let done = 0
+    for (const o of s.orders) {
+      if (!room.projectIds.includes(o.projectId)) continue
+      if (o.status === 'running') run++
+      else if (o.status === 'awaiting_approval') wait++
+      else if (o.status === 'done' && o.updatedAt >= today) done++
+    }
+    return `${run},${wait},${done}`
+  })
   return useMemo(() => {
     const ps = room.projectIds.map((id) => projects.find((p) => p.id === id)!).filter(Boolean)
+    if (room.lounge) return { title: room.name, subtitle: 'Zona común', lines: [] }
+    if (signal)
+      return {
+        title: room.name,
+        subtitle: signal.headline,
+        lines: signal.items.map((it, i) => ({ label: it.label, value: it.delta ? `${it.value} ${it.delta}` : it.value, tone: i ? undefined : signal.tone })),
+      }
+    const [run, wait, done] = counts.split(',').map(Number)
     return {
       title: room.name,
-      subtitle: room.lounge ? 'Zona común' : `${ps.length} ${ps.length === 1 ? 'empleado' : 'empleados'}`,
-      lines: ps.map((p) => ({ label: p.name })),
+      subtitle: `${ps.length} ${ps.length === 1 ? 'empleado' : 'empleados'}`,
+      lines: [
+        { label: 'En curso', value: String(run), tone: run ? ('ok' as const) : undefined },
+        { label: 'Esperan tu decisión', value: String(wait), tone: wait ? ('warn' as const) : undefined },
+        { label: 'Hechas hoy', value: String(done) },
+      ],
     }
-  }, [room, projects])
+  }, [room, projects, signal, counts])
 }
 
 function RoomNode({ room, focused, onPick }: { room: RoomLayout; focused: boolean; onPick: (r: RoomLayout) => void }) {

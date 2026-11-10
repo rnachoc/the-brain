@@ -5,6 +5,7 @@ import type { LogLevel, Order, RouterQuestion, Run, Schedule, ServerEvent, Snaps
 import { listNotes, writeNote } from './brain'
 import { hasClaude } from './config'
 import { repo } from './db'
+import { currentSignals } from './signals'
 
 export const bus = new EventEmitter()
 bus.setMaxListeners(100)
@@ -26,6 +27,7 @@ export const hq = {
       schedules: repo.listSchedules(),
       schedulesPaused: hq.schedulesPaused(),
       question,
+      signals: currentSignals(),
       live: hasClaude(),
     }
   },

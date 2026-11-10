@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import websocket from '@fastify/websocket'
 import { config as loadEnv } from 'dotenv'
@@ -10,7 +11,9 @@ loadEnv({ path: join(ROOT, '.env'), quiet: true })
 const { claudeAuth, loadConfig } = await import('./config')
 const { repo } = await import('./db')
 const { bus, hq, resolveApproval } = await import('./hq')
-const { answerQuestion, cancelRun, handleChat } = await import('./orchestrator')
+const { answerQuestion, cancelRun, handleChat, launchAction } = await import('./orchestrator')
+const { safeProjectFile, startSignals } = await import('./signals')
+const { listClaudeTasks } = await import('./automations')
 const { ensureBrain, listNotes } = await import('./brain')
 const { runSchedule, startScheduler } = await import('./scheduler')
 const { isValidRule } = await import('../../shared/schedule')
@@ -53,6 +56,28 @@ app.post<{ Params: { id: string } }>('/api/runs/:id/cancel', async (req, reply) 
 )
 
 app.get('/api/brain', async () => listNotes())
+
+// ---------- Acciones, señales y automatizaciones ----------
+
+// Crea una orden que espera tu decisión; el comando solo se ejecuta si la apruebas.
+app.post<{ Params: { id: string; actionId: string } }>('/api/projects/:id/actions/:actionId', async (req, reply) => {
+  const project = loadConfig().projects.find((p) => p.id === req.params.id)
+  const action = project?.actions?.find((a) => a.id === req.params.actionId)
+  if (!project || !action) return reply.code(404).send({ error: 'Acción no encontrada' })
+  return { runId: launchAction(project, action).id }
+})
+
+// Informe o imagen que enlaza la señal de un proyecto (solo dentro de su carpeta, nunca .env).
+app.get<{ Params: { id: string }; Querystring: { path?: string } }>('/api/projects/:id/file', async (req, reply) => {
+  const project = loadConfig().projects.find((p) => p.id === req.params.id)
+  const abs = project && req.query.path ? safeProjectFile(project, req.query.path) : null
+  if (!abs) return reply.code(404).send({ error: 'Archivo no disponible' })
+  const ext = abs.slice(abs.lastIndexOf('.')).toLowerCase()
+  const type = ext === '.md' ? 'text/markdown; charset=utf-8' : ext === '.png' ? 'image/png' : 'image/jpeg'
+  return reply.type(type).send(readFileSync(abs))
+})
+
+app.get('/api/automations/claude', async () => listClaudeTasks())
 
 // ---------- Tareas programadas ----------
 
@@ -117,6 +142,7 @@ app.get('/ws', { websocket: true }, (socket) => {
 const interrupted = repo.failInterrupted()
 ensureBrain(loadConfig().projects)
 startScheduler()
+startSignals((projectId, signal) => bus.emit('event', { type: 'signal', projectId, signal }))
 await app.listen({ port: PORT, host: '127.0.0.1' })
 
 const { projects } = loadConfig()

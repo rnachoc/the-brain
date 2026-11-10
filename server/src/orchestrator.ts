@@ -1,10 +1,11 @@
 // Recibe los mensajes del chat, los enruta y lanza los agentes (en paralelo si hay varios).
-import type { Project } from '../../shared/types'
+import type { Project, ProjectAction } from '../../shared/types'
+import { executeApproved } from './actions'
 import { runClaude } from './agents/claude'
 import { runSimulated } from './agents/simulated'
 import { hasClaude, loadConfig } from './config'
 import { repo } from './db'
-import { hq, resolveApproval, uid } from './hq'
+import { hq, resolveApproval, uid, waitForApproval } from './hq'
 import { route, type RouteDecision } from './router'
 
 const VIA: Record<string, string> = { mention: '@mención', model: 'router', keywords: 'palabras clave' }
@@ -29,6 +30,41 @@ export function startRun(project: Project, prompt: string) {
     hq.log(project.id, run.id, 'error', `Error del agente: ${msg}`)
     })
     .finally(() => running.delete(run.id))
+}
+
+/**
+ * Acción lanzada por ti desde la tarjeta: crea un run con una sola orden que espera tu decisión.
+ * Aprobar ejecuta el comando en el servidor; rechazar no ejecuta nada. No necesita agentes reales.
+ */
+export function launchAction(project: Project, action: ProjectAction) {
+  const run = hq.createRun(project.id, `Acción: ${action.label}`, false)
+  const abort = new AbortController()
+  running.set(run.id, abort)
+  const [order] = hq.addOrders(run, [{ title: action.label, external: true }])
+  hq.patchOrder(order.id, {
+    status: 'awaiting_approval',
+    action: { id: action.id, label: action.label },
+    draft: { kind: 'other', body: `Vas a ejecutar: ${action.label}
+
+Comando: ${action.command}
+Carpeta: ${project.folder}` },
+  })
+  hq.patchRun(run.id, { status: 'waiting' })
+  hq.log(project.id, run.id, 'approval', `⏸ Esperando tu aprobación: ${action.label}`)
+  void (async () => {
+    const ok = await waitForApproval(order.id)
+    if (abort.signal.aborted) return
+    if (!ok) {
+      hq.patchOrder(order.id, { status: 'rejected' })
+      hq.patchRun(run.id, { status: 'done', endedAt: Date.now(), result: 'Rechazada: no se ejecutó nada' })
+      hq.log(project.id, run.id, 'warn', `✗ Rechazado: ${action.label} no se ejecuta`)
+      return
+    }
+    const r = await executeApproved(project, run, repo.getOrder(order.id)!, abort.signal)
+    if (abort.signal.aborted) return
+    hq.patchRun(run.id, { status: r.ok ? 'done' : 'failed', endedAt: Date.now(), result: r.tail })
+  })().finally(() => running.delete(run.id))
+  return run
 }
 
 /** Detiene un run en marcha: se rechazan sus borradores pendientes y nada queda como hecho. */

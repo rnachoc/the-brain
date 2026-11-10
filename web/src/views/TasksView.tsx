@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { ProjectTag, StatusChip } from '../components/bits'
-import { SchedulesPanel } from '../components/SchedulesPanel'
 import { useStore } from '../store'
 import type { OrderStatus } from '../types'
 import { cx, ORDER_META, timeAgo } from '../util'
@@ -23,7 +22,7 @@ export function TasksView() {
   )
 
   return (
-    <div className="mx-auto grid h-full max-w-7xl gap-6 overflow-y-auto p-6 lg:grid-cols-[1fr_360px]">
+    <div className="mx-auto h-full max-w-7xl overflow-y-auto p-6">
       <section className="min-w-0">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <h2 className="mr-auto text-lg font-semibold text-white">Todas las tareas</h2>
@@ -81,8 +80,6 @@ export function TasksView() {
           </table>
         </div>
       </section>
-
-      <SchedulesPanel />
     </div>
   )
 }

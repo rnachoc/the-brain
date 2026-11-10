@@ -5,6 +5,7 @@ import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk'
 import { z } from 'zod'
 import type { Order, Project, Run } from '../../../shared/types'
 import { getNote } from '../brain'
+import { executeApproved, findAction } from '../actions'
 import { hq, waitForApproval } from '../hq'
 import { repo } from '../db'
 
@@ -61,10 +62,20 @@ export function hqServer(project: Project, run: Run, cwd: string) {
       to: z.string().optional().describe('Destinatario o canal'),
       subject: z.string().optional(),
       body: z.string().describe('Texto completo del borrador'),
+      action: z
+        .string()
+        .optional()
+        .describe(
+          `Id de una acción del proyecto que el servidor ejecutará si el usuario aprueba. Disponibles: ${
+            project.actions?.map((a) => `${a.id} (${a.label})`).join(', ') || 'ninguna'
+          }. No inventes ids.`,
+        ),
     },
-    async ({ number, kind, to, subject, body }) => {
+    async ({ number, kind, to, subject, body, action: actionId }) => {
       const o = byNumber(number)
       if (!o) return text(`No existe la orden ${number}.`)
+      const action = findAction(project, actionId)
+      if (actionId && !action) return text(`La acción "${actionId}" no existe en este proyecto. Usa una de las disponibles o ninguna.`)
       const draft = { kind, to, subject, body }
 
       // Copia del borrador en la carpeta del agente, para tenerlo aunque se cierre el panel.
@@ -73,12 +84,26 @@ export function hqServer(project: Project, run: Run, cwd: string) {
       const file = join(dir, `${new Date().toISOString().slice(0, 10)}-${run.id}-${number}.md`)
       writeFileSync(file, `# ${o.title}\n\n${to ? `**Para:** ${to}\n\n` : ''}${subject ? `**Asunto:** ${subject}\n\n` : ''}${body}\n`)
 
-      hq.patchOrder(o.id, { status: 'awaiting_approval', external: true, draft })
+      hq.patchOrder(o.id, { status: 'awaiting_approval', external: true, draft, action: action && { id: action.id, label: action.label } })
       hq.patchRun(run.id, { status: 'waiting' })
       hq.log(run.projectId, run.id, 'approval', `⏸ Esperando tu aprobación: ${o.title}`, JSON.stringify(draft))
 
       const ok = await waitForApproval(o.id)
       if (repo.getRun(run.id)?.status === 'failed') return text('El usuario ha cancelado esta tarea. Detente.')
+      if (ok && action) {
+        // Lo ejecuta el servidor, no el agente; al agente solo le llega el resultado.
+        const r = await executeApproved(project, run, repo.getOrder(o.id)!)
+        hq.patchRun(run.id, { status: 'running' })
+        return text(
+          r.ok
+            ? `El usuario ha APROBADO y The Brain ha ejecutado "${action.label}". Últimas líneas:
+${r.tail}
+Continúa con la siguiente orden.`
+            : `El usuario aprobó, pero "${action.label}" falló:
+${r.tail}
+No lo reintentes por tu cuenta; explica el fallo en tu resumen.`,
+        )
+      }
       hq.patchOrder(o.id, { status: ok ? 'done' : 'rejected' })
       hq.patchRun(run.id, { status: 'running' })
       hq.log(

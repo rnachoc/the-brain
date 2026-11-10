@@ -1,5 +1,5 @@
 // Tarjeta del empleado seleccionado: estado, decisiones pendientes, actividad, próxima programada y órdenes directas.
-import { Check, ChevronLeft, ChevronRight, ExternalLink, PanelRight, Play, Send, Square, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, ExternalLink, PanelRight, Play, Send, Square, Terminal, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DraftCard } from '../../components/bits'
@@ -7,6 +7,11 @@ import { projectById } from '../../config'
 import { agentStatus, employeeLine, nextSchedule, useStore } from '../../store'
 import { cx, fmtDateTime, timeAgo } from '../../util'
 import { employeeName, employeeRole } from '../look'
+
+/** "Publicar el reel de hoy" → "Aprobar y publicar". */
+const approveLabel = (action?: { label: string }) => (action ? `Aprobar y ${action.label.split(/\s+/)[0].toLowerCase()}` : 'Aprobar')
+
+const TONE = { ok: 'bg-emerald-400', warn: 'bg-[#F5B800]', error: 'bg-rose-400' }
 
 function Block({ tone, label, children }: { tone: 'run' | 'wait' | 'idle'; label: string; children: React.ReactNode }) {
   return (
@@ -30,8 +35,17 @@ export function AgentCard({ projectId, onClose }: { projectId: string; onClose: 
   const runs = useStore((s) => s.runs)
   const logs = useStore((s) => s.logs)
   const next = useStore(useShallow((s) => nextSchedule(s, projectId)))
-  const { approve, reject, cancelRun, send, runScheduleNow, showDetail } = useStore(
-    useShallow((s) => ({ approve: s.approve, reject: s.reject, cancelRun: s.cancelRun, send: s.send, runScheduleNow: s.runScheduleNow, showDetail: s.showDetail })),
+  const signal = useStore((s) => s.signals[projectId])
+  const { approve, reject, cancelRun, send, runScheduleNow, showDetail, launchAction } = useStore(
+    useShallow((s) => ({
+      approve: s.approve,
+      reject: s.reject,
+      cancelRun: s.cancelRun,
+      send: s.send,
+      runScheduleNow: s.runScheduleNow,
+      showDetail: s.showDetail,
+      launchAction: s.launchAction,
+    })),
   )
   const [text, setText] = useState('')
   const [sent, setSent] = useState(false)
@@ -95,7 +109,7 @@ export function AgentCard({ projectId, onClose }: { projectId: string; onClose: 
             )}
             <div className="mt-2.5 flex gap-2">
               <button onClick={() => approve(order.id)} className="btn h-8 flex-1 justify-center bg-[#F5B800] text-[#1b1406] hover:bg-[#ffc824]">
-                <Check size={14} strokeWidth={2.6} /> Aprobar
+                <Check size={14} strokeWidth={2.6} /> {approveLabel(order.action)}
               </button>
               <button onClick={() => reject(order.id)} className="btn h-8 flex-1 justify-center bg-white/[0.06] text-slate-200 ring-1 ring-inset ring-white/10 hover:bg-white/10">
                 <X size={14} strokeWidth={2.6} /> Rechazar
@@ -117,6 +131,34 @@ export function AgentCard({ projectId, onClose }: { projectId: string; onClose: 
           <Block tone="idle" label="Libre">
             <div className="mt-1 text-[13px] text-slate-300">{line === 'Libre' ? 'Sin tareas en curso' : line}</div>
           </Block>
+        )}
+
+        {signal && (
+          <div className="rounded-lg bg-white/[0.03] px-3 py-2 ring-1 ring-inset ring-white/[0.06]">
+            <div className="flex items-center gap-2 text-[12px] text-slate-200">
+              <span className={cx('h-1.5 w-1.5 shrink-0 rounded-full', TONE[signal.tone])} />
+              <span className="min-w-0 flex-1 truncate">{signal.headline}</span>
+            </div>
+            {signal.items.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                {signal.items.slice(0, 4).map((it) => (
+                  <span key={it.label}>
+                    {it.label} <span className="font-semibold text-slate-200">{it.value}</span> {it.delta && <span className="text-emerald-300">{it.delta}</span>}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!order && !!p.actions?.length && (
+          <div className="flex flex-wrap gap-1.5">
+            {p.actions.map((a) => (
+              <button key={a.id} onClick={() => launchAction(p.id, a.id)} title={`Pide tu aprobación antes de ejecutar: ${a.command}`} className="btn btn-ghost btn-sm">
+                <Terminal size={12} /> {a.label}
+              </button>
+            ))}
+          </div>
         )}
 
         {recent.length > 0 && (

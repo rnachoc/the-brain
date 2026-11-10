@@ -1,4 +1,4 @@
-import { BrainCircuit, CalendarDays, LayoutGrid, ListChecks, type LucideIcon } from 'lucide-react'
+import { BrainCircuit, CalendarDays, LayoutGrid, ListChecks, Workflow, type LucideIcon } from 'lucide-react'
 import { agentStatus, useStore } from '../store'
 import type { Tab } from '../types'
 import { cx } from '../util'
@@ -7,6 +7,7 @@ import { BrainMark } from './icons'
 const TABS: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: 'office', label: 'Office', icon: LayoutGrid },
   { id: 'tasks', label: 'Tasks', icon: ListChecks },
+  { id: 'automations', label: 'Automatizaciones', icon: Workflow },
   { id: 'calendar', label: 'Calendar', icon: CalendarDays },
   { id: 'brain', label: 'Brain', icon: BrainCircuit },
 ]
@@ -57,8 +58,8 @@ export function TopBar() {
       <div className="flex items-center gap-3">
         <BrainMark size={30} />
         <div className="leading-none">
-          <div className="text-[15px] font-semibold tracking-[-0.01em] text-white">The Brain</div>
-          <div className="mt-1 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">Agent control room</div>
+          <div className="whitespace-nowrap text-[15px] font-semibold tracking-[-0.01em] text-white">The Brain</div>
+          <div className="mt-1 hidden whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500 xl:block">Agent control room</div>
         </div>
       </div>
 

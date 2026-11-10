@@ -35,6 +35,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS logs_project ON logs(project_id);
 `)
 
+// Migraciones de columnas añadidas después.
+const hasColumn = (table: string, col: string) =>
+  (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).some((c) => c.name === col)
+if (!hasColumn('orders', 'action')) db.exec('ALTER TABLE orders ADD COLUMN action TEXT')
+
 type Row = Record<string, SQLInputValue>
 
 const toRun = (r: Row): Run => ({
@@ -58,6 +63,7 @@ const toOrder = (r: Row): Order => ({
   status: r.status as Order['status'],
   external: !!r.external,
   draft: r.draft ? (JSON.parse(r.draft as string) as Draft) : undefined,
+  action: r.action ? (JSON.parse(r.action as string) as Order['action']) : undefined,
   note: (r.note as string) ?? undefined,
   createdAt: Number(r.created_at),
   updatedAt: Number(r.updated_at),
@@ -139,14 +145,14 @@ export const repo = {
 
   insertOrder(o: Order) {
     db.prepare(
-      'INSERT INTO orders (id, run_id, project_id, seq, title, status, external, draft, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    ).run(o.id, o.runId, o.projectId, o.seq, o.title, o.status, o.external ? 1 : 0, o.draft ? JSON.stringify(o.draft) : null, o.note ?? null, o.createdAt, o.updatedAt)
+      'INSERT INTO orders (id, run_id, project_id, seq, title, status, external, draft, action, note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    ).run(o.id, o.runId, o.projectId, o.seq, o.title, o.status, o.external ? 1 : 0, o.draft ? JSON.stringify(o.draft) : null, o.action ? JSON.stringify(o.action) : null, o.note ?? null, o.createdAt, o.updatedAt)
   },
   updateOrder(id: string, p: Partial<Order>): Order {
     const cur = repo.getOrder(id)!
     const n = { ...cur, ...p, updatedAt: Date.now() }
-    db.prepare('UPDATE orders SET status = ?, draft = ?, note = ?, updated_at = ? WHERE id = ?').run(
-      n.status, n.draft ? JSON.stringify(n.draft) : null, n.note ?? null, n.updatedAt, id,
+    db.prepare('UPDATE orders SET status = ?, draft = ?, action = ?, note = ?, updated_at = ? WHERE id = ?').run(
+      n.status, n.draft ? JSON.stringify(n.draft) : null, n.action ? JSON.stringify(n.action) : null, n.note ?? null, n.updatedAt, id,
     )
     return n
   },
