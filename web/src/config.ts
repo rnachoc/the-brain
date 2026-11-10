@@ -26,3 +26,16 @@ export function projectById(id: string): Project {
 export function fallbackProject(): Project {
   return projects.find((p) => p.fallback) ?? projects[0]
 }
+
+interface OfficeConfig {
+  title: string
+  chief: { name: string; role: string }
+}
+
+const rawOffice = (raw as { office?: Partial<OfficeConfig> }).office ?? {}
+
+/** Bloque `office` de config.json con sus valores por defecto. */
+export const office: OfficeConfig = {
+  title: rawOffice.title ?? 'Mi oficina de agentes de IA',
+  chief: { name: 'Iris', role: 'Jefa de gabinete', ...rawOffice.chief },
+}

@@ -1,5 +1,6 @@
 // Aspecto estable de cada empleado a partir de su id. La ropa toma el color del proyecto.
 import * as THREE from 'three'
+import { projects } from '../config'
 import type { Project } from '../types'
 import { canvasTexture, seeded } from './kit'
 
@@ -43,11 +44,22 @@ export const CHIEF_LOOK: Look = {
   shoes: '#1f2023',
 }
 
+// Nombres por defecto: estables a partir del id y sin repetir dentro de la oficina.
+const defaultNames = new Map<string, string>()
+{
+  const used = new Set(projects.map((p) => p.agentName?.trim()).filter(Boolean))
+  for (const p of projects) {
+    if (p.agentName?.trim()) continue
+    let i = Math.floor(seeded(`name:${p.id}`)() * NAMES.length)
+    for (let n = 0; n < NAMES.length && used.has(NAMES[i]); n++) i = (i + 1) % NAMES.length
+    used.add(NAMES[i])
+    defaultNames.set(p.id, NAMES[i])
+  }
+}
+
 /** Nombre del empleado: el de config.json o uno estable a partir del id. */
 export function employeeName(p: Project): string {
-  if (p.agentName?.trim()) return p.agentName.trim()
-  const r = seeded(`name:${p.id}`)
-  return NAMES[Math.floor(r() * NAMES.length)]
+  return p.agentName?.trim() || defaultNames.get(p.id) || NAMES[0]
 }
 
 export const employeeRole = (p: Project) => p.role?.trim() || p.name

@@ -73,7 +73,8 @@ function Count({ n, label, cls }: { n: number; label: string; cls: string }) {
 
 export function OrderQueue() {
   const orders = useStore((s) => s.orders)
-  const [collapsed, setCollapsed] = useState(false)
+  // En Office la escena necesita el sitio: la cola arranca plegada.
+  const [collapsed, setCollapsed] = useState(() => useStore.getState().tab === 'office')
 
   const { list, counts } = useMemo(() => {
     const active = orders.filter((o) => o.status !== 'done' && o.status !== 'rejected')

@@ -48,8 +48,8 @@ function viewFor(focus: Focus, layout: OfficeLayout, aspect: number): View {
     const az = focus.rot * 0.7
     // Punto medio entre la silla y el sitio donde se queda de pie, para que quepa en los dos estados.
     const mid = new THREE.Vector3(0.45, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), focus.rot)
-    // El empleado queda a la izquierda del centro: desplazamos el objetivo a la derecha de la cámara.
-    const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az)).multiplyScalar(Math.min(0.8, 0.3 * aspect))
+    // La tarjeta ocupa la esquina inferior izquierda: el empleado queda algo a la derecha del centro.
+    const right = new THREE.Vector3(Math.cos(az), 0, -Math.sin(az)).multiplyScalar(-Math.min(0.8, 0.3 * aspect))
     return {
       target: new THREE.Vector3(focus.x, focus.room.y + 1.1, focus.z).add(mid).add(right),
       az,

@@ -18,7 +18,8 @@ export function ChatBar() {
   const setDraft = useStore((s) => s.setChatDraft)
   const send = useStore((s) => s.send)
   const projects = useStore((s) => s.projects)
-  const question = useStore((s) => s.question)
+  // En Office la pregunta del router la hace la jefa de gabinete en la escena.
+  const question = useStore((s) => (s.tab === 'office' ? null : s.question))
   const answer = useStore((s) => s.answerQuestion)
   const dismiss = useStore((s) => s.dismissQuestion)
   const note = useStore((s) => s.routerNote)

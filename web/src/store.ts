@@ -28,10 +28,13 @@ export interface State {
   live: boolean
   tab: Tab
   selectedProjectId: string | null
+  /** En Office, el panel lateral solo se abre con "Ver detalle"; la tarjeta de la escena va primero. */
+  detail: boolean
   chatDraft: string
 
   setTab: (tab: Tab) => void
   selectProject: (id: string | null) => void
+  showDetail: (open: boolean) => void
   setChatDraft: (text: string) => void
   send: (text: string) => void
   answerQuestion: (projectIds: string[]) => void
@@ -77,10 +80,12 @@ export const useStore = create<State>()((set) => ({
   live: false,
   tab: 'office',
   selectedProjectId: null,
+  detail: false,
   chatDraft: '',
 
   setTab: (tab) => set({ tab }),
-  selectProject: (selectedProjectId) => set({ selectedProjectId }),
+  selectProject: (selectedProjectId) => set({ selectedProjectId, detail: false }),
+  showDetail: (detail) => set({ detail }),
   setChatDraft: (chatDraft) => set({ chatDraft }),
   send: (text) => {
     if (!text.trim()) return

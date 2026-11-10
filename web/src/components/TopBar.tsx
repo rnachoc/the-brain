@@ -35,6 +35,16 @@ export function TopBar() {
   const approvals = useStore((s) => s.orders.filter((o) => o.status === 'awaiting_approval').length)
   const connected = useStore((s) => s.connected)
   const live = useStore((s) => s.live)
+  const select = useStore((s) => s.selectProject)
+
+  /** Lleva a la oficina y enfoca al siguiente empleado que espera una decisión. */
+  const nextApproval = () => {
+    const s = useStore.getState()
+    const ids = s.projects.filter((p) => s.orders.some((o) => o.projectId === p.id && o.status === 'awaiting_approval')).map((p) => p.id)
+    if (!ids.length) return
+    setTab('office')
+    select(ids[(ids.indexOf(s.selectedProjectId ?? '') + 1) % ids.length])
+  }
 
   const mode = !connected
     ? { label: 'Sin conexión', dot: 'bg-rose-400', cls: 'text-rose-200 ring-rose-400/25 bg-rose-500/[0.08]', hint: 'El servidor de agentes no responde' }
@@ -76,7 +86,14 @@ export function TopBar() {
         <div className="flex h-8 items-center divide-x divide-white/[0.06] rounded-lg bg-white/[0.02] ring-1 ring-inset ring-white/[0.06]">
           <Stat value={totalAgents} label="agentes" />
           <Stat value={running} label="corriendo" tone={running ? 'live' : undefined} />
-          <Stat value={approvals} label="por aprobar" tone={approvals ? 'warn' : undefined} />
+          <button
+            onClick={nextApproval}
+            disabled={!approvals}
+            title={approvals ? 'Ir al siguiente empleado que espera tu decisión' : undefined}
+            className="h-full rounded-r-lg transition-colors enabled:hover:bg-[#F5B800]/10"
+          >
+            <Stat value={approvals} label="por aprobar" tone={approvals ? 'warn' : undefined} />
+          </button>
         </div>
       </div>
     </header>

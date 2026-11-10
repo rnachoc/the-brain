@@ -20,6 +20,7 @@ const LOG_COLOR: Record<LogLevel, string> = {
 export function AgentPanel() {
   const id = useStore((s) => s.selectedProjectId)
   const close = useStore((s) => s.selectProject)
+  const hidden = useStore((s) => s.tab === 'office' && !s.detail)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close(null)
@@ -27,7 +28,7 @@ export function AgentPanel() {
     return () => window.removeEventListener('keydown', onKey)
   }, [close])
 
-  if (!id) return null
+  if (!id || hidden) return null
   return <Panel key={id} projectId={id} onClose={() => close(null)} />
 }
 

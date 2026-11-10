@@ -27,6 +27,8 @@ export interface Project {
   agentName?: string
   /** Cargo que se ve en la tarjeta. Por defecto, el name del proyecto. */
   role?: string
+  /** Enlace al proyecto en claude.ai para el botón "Abrir en Claude". */
+  claudeUrl?: string
 }
 
 export interface Draft {

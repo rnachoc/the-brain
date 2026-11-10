@@ -2,11 +2,15 @@
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { office } from '../config'
 import { agentStatus, useStore } from '../store'
 import type { Project } from '../types'
 import { Building } from './Building'
 import { CameraRig, FOV, seatFocus, type Focus } from './CameraRig'
 import { BlockPerson, Employee } from './Character'
+import { AgentCard } from './hud/AgentCard'
+import { ChiefLine } from './hud/ChiefLine'
+import { Filters } from './hud/Filters'
 import { FloorChip } from './hud/FloorChip'
 import { Headline } from './hud/Headline'
 import { OverviewLabels } from './hud/OverviewLabels'
@@ -14,8 +18,6 @@ import { buildLayout, roomLabel, type OfficeLayout, type RoomLayout, type Seat }
 import { CHIEF_LOOK, lookFor } from './look'
 import { Room, ScreenTicker, type ScreenContent } from './Room'
 import { useOffice } from './state'
-
-const TITLE = 'Mi oficina de agentes de IA'
 
 /** Ignora los clics que en realidad eran arrastres para girar la cámara. */
 const isClick = (e: ThreeEvent<MouseEvent>) => e.delta < 6
@@ -48,9 +50,10 @@ function RoomNode({ room, focused, onPick }: { room: RoomLayout; focused: boolea
 
 function SeatedEmployee({ p, room, seat, selected }: { p: Project; room: RoomLayout; seat: Seat; selected: boolean }) {
   const status = useStore((s) => agentStatus(s, p.id))
+  const filter = useOffice((s) => s.filter)
   const select = useStore((s) => s.selectProject)
   const look = useMemo(() => lookFor(p.id, p.color), [p.id, p.color])
-  return <Employee look={look} status={status} x={seat.x} y={room.y} z={seat.z} rot={seat.rot} selected={selected} onSelect={() => select(p.id)} />
+  return <Employee look={look} status={status} x={seat.x} y={room.y} z={seat.z} rot={seat.rot} selected={selected} dim={filter !== 'all' && filter !== status} onSelect={() => select(p.id)} />
 }
 
 /** Jefe de gabinete en el atrio: gira hacia el último empleado al que ha pasado algo. */
@@ -148,8 +151,15 @@ export default function Office3D() {
         <ScreenTicker />
         <CameraRig focus={focus} layout={layout} />
       </Canvas>
-      <Headline employees={projects.length} title={TITLE} />
+      <Headline employees={projects.length} title={office.title} />
       {chipRoom && <FloorChip label={roomLabel(chipRoom)} onBack={back} />}
+      <div className="pointer-events-none absolute bottom-4 left-4 z-10 flex flex-col items-start gap-2">
+        {picked && selected && <AgentCard key={selected} projectId={selected} onClose={() => select(null)} />}
+        <Filters onOverview={back} />
+      </div>
+      <div className="pointer-events-none absolute bottom-16 left-1/2 z-10 -translate-x-1/2">
+        <ChiefLine />
+      </div>
     </div>
   )
 }

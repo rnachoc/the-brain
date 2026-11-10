@@ -5,6 +5,7 @@ import { agentStatus, employeeLine, useStore } from '../../store'
 import { cx } from '../../util'
 import type { OfficeLayout } from '../layout'
 import { employeeName } from '../look'
+import { useOffice } from '../state'
 
 const clip = (s: string, n = 32) => (s.length > n ? s.slice(0, n - 1) + '…' : s)
 
@@ -12,7 +13,8 @@ function Label({ id, x, y, z }: { id: string; x: number; y: number; z: number })
   const status = useStore((s) => agentStatus(s, id))
   const line = useStore((s) => employeeLine(s, id))
   const select = useStore((s) => s.selectProject)
-  if (status === 'idle') return null
+  const filter = useOffice((s) => s.filter)
+  if (status === 'idle' || (filter !== 'all' && filter !== status)) return null
   return (
     <Html position={[x, y, z]} center zIndexRange={[5, 0]}>
       <button

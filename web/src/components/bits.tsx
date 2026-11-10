@@ -54,7 +54,7 @@ const KIND: Record<Draft['kind'], { label: string; icon: LucideIcon }> = {
 }
 
 /** Borrador de una orden externa con botones Aprobar / Rechazar. */
-export function DraftCard({ order }: { order: Order }) {
+export function DraftCard({ order, bare }: { order: Order; bare?: boolean }) {
   const approve = useStore((s) => s.approve)
   const reject = useStore((s) => s.reject)
   const [copied, setCopied] = useState(false)
@@ -87,7 +87,8 @@ export function DraftCard({ order }: { order: Order }) {
           </span>
         )}
       </div>
-      <pre className="max-h-52 overflow-auto whitespace-pre-wrap px-3.5 py-3 font-sans text-[13px] leading-relaxed text-slate-200">{d.body}</pre>
+      <pre className={cx(bare ? 'max-h-28' : 'max-h-52', 'overflow-auto whitespace-pre-wrap px-3.5 py-3 font-sans text-[13px] leading-relaxed text-slate-200')}>{d.body}</pre>
+      {!bare && (
       <div className="flex items-center gap-2 border-t border-white/[0.06] px-3.5 py-2.5">
         {pending ? (
           <>
@@ -105,6 +106,7 @@ export function DraftCard({ order }: { order: Order }) {
           </button>
         )}
       </div>
+      )}
     </div>
   )
 }

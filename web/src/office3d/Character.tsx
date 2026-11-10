@@ -139,11 +139,14 @@ export interface EmployeeProps {
   z: number
   rot: number
   selected: boolean
+  /** Atenuado por un filtro: en gris y sin globo. */
+  dim?: boolean
   onSelect: () => void
 }
 
 /** Empleado en su puesto: sentado si trabaja, de pie junto a la mesa si está libre o espera. */
-export function Employee({ look, status, x, y, z, rot, selected, onSelect }: EmployeeProps) {
+export function Employee({ look, status, x, y, z, rot, selected, dim, onSelect }: EmployeeProps) {
+  const shown = useMemo(() => (dim ? { ...look, skin: '#c4c6ca', hair: '#9ea1a8', shirt: '#b3b6bc', pants: '#94979e', glasses: false } : look), [dim, look])
   const [hover, setHover] = useState(false)
   const sitting = status === 'running'
   const action: Action = status === 'running' ? 'type' : status === 'waiting' ? 'wave' : 'idle'
@@ -171,9 +174,9 @@ export function Employee({ look, status, x, y, z, rot, selected, onSelect }: Emp
           if (e.delta < 6) onSelect()
         }}
       >
-        <BlockPerson look={look} sitting={sitting} action={action} />
+        <BlockPerson look={shown} sitting={sitting} action={action} />
         {(hover || selected) && <mesh geometry={RING} material={RING_MAT} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]} />}
-        {status !== 'idle' && <Bubble kind={status === 'waiting' ? 'alert' : 'dots'} y={sitting ? 2.05 : 2.3} />}
+        {status !== 'idle' && !dim && <Bubble kind={status === 'waiting' ? 'alert' : 'dots'} y={sitting ? 2.05 : 2.3} />}
       </group>
     </group>
   )
